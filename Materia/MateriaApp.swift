@@ -1,17 +1,87 @@
-//
-//  MateriaApp.swift
-//  Materia
-//
-//  Created by Karl Brandenberger on 8/12/26.
-//
-
-import SwiftUI
+internal import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 @main
-struct MateriaApp: App {
+struct MateriaLogApp: App {
+    @State private var store = LogStore()
+
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        mainWindow
+
+        #if os(macOS)
+        // Logging shouldn't require finding the window. One click from the
+        // menu bar slots a jewel and gets out of the way.
+        MenuBarExtra {
+            MenuBarContent(store: store)
+        } label: {
+            Image(systemName: "circle.grid.2x2.fill")
         }
+        .menuBarExtraStyle(.menu)
+        #endif
+    }
+
+    // Kept as its own property so the macOS-only modifiers live in one
+    // uninterrupted chain, rather than straddling a #if inside SceneBuilder.
+    private var mainWindow: some Scene {
+        #if os(macOS)
+        return WindowGroup {
+            rootView
+        }
+        .defaultSize(width: 940, height: 660)
+        .commands {
+            CommandGroup(replacing: .newItem) { }
+        }
+        #else
+        return WindowGroup {
+            rootView
+        }
+        #endif
+    }
+
+    private var rootView: some View {
+        ContentView()
+            .environment(store)
+            // The interface is lit by the orbs. Light mode would kill it,
+            // so this is a deliberate lock rather than an oversight.
+            .preferredColorScheme(.dark)
+            .tint(Color(hex: 0x4FB6FF))
+            #if os(macOS)
+            .frame(minWidth: 760, minHeight: 520)
+            #endif
     }
 }
+
+// MARK: - Menu bar
+
+#if os(macOS)
+private struct MenuBarContent: View {
+    let store: LogStore
+
+    var body: some View {
+        if store.activities.isEmpty {
+            Text("No activities yet")
+        } else {
+            ForEach(store.activities) { activity in
+                Button {
+                    store.slot(activity.id)
+                } label: {
+                    Text("\(activity.name)  ·  \(store.todayCount(for: activity))/\(activity.dailyTarget)")
+                }
+            }
+        }
+
+        Divider()
+
+        Button("Open MateriaLog") {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+
+        Button("Quit") {
+            NSApplication.shared.terminate(nil)
+        }
+        .keyboardShortcut("q")
+    }
+}
+#endif
