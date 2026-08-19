@@ -75,7 +75,7 @@ struct ActivityEditor: View {
                         .font(.system(.body, design: .rounded, weight: .semibold))
                         .monospacedDigit()
                 }
-                SlotRail(filled: 0, capacity: target, color: color, size: 18, maxSlots: 40)
+                SlotRail(count: 0, color: color, capacity: target, size: 18, maxSlots: 40)
                 Text("Fill every socket to master the day. Extra jewels are kept and marked gold.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -135,20 +135,28 @@ private struct FieldLabel: View {
 
 // MARK: - Day detail
 
-struct DayDetailSheet: View {
+/// Every jewel logged on one day, newest first. Pass an `activityID` to narrow
+/// it to a single activity; leave it nil for the combined day.
+struct DayEntriesSheet: View {
     @Environment(LogStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
-    let activity: Activity
-    let summary: DaySummary
+    let day: Date
+    let capacity: Int
+    var activityID: UUID? = nil
 
     var body: some View {
+        // Newest first for the list, chronological for the rail.
+        let entries = store.entries(on: day, activityID: activityID)
+        let fills = entries.reversed().map(\.color)
+        let mixed = Set(entries.map(\.activityID)).count > 1
+
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(store.calc.label(for: summary.day))
+                    Text(store.calc.label(for: day))
                         .font(.system(.title3, design: .rounded, weight: .bold))
-                    Text(summary.day.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+                    Text(day.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -157,35 +165,38 @@ struct DayDetailSheet: View {
                     .keyboardShortcut(.defaultAction)
             }
 
-            SlotRail(
-                filled: summary.count,
-                capacity: summary.target,
-                color: activity.color,
-                size: 24
-            )
+            SlotRail(fills: fills, capacity: capacity, size: 24, maxSlots: 40)
 
             Divider().overlay(Chrome.steel.opacity(0.3))
 
-            let jewels = store.jewels(on: summary.day, for: activity)
-
             List {
-                ForEach(jewels) { jewel in
+                ForEach(entries) { entry in
                     HStack(spacing: 12) {
-                        MateriaOrb(color: activity.color, size: 18, glow: 0.6)
-                        Text(jewel.timestamp.formatted(date: .omitted, time: .shortened))
+                        MateriaOrb(color: entry.color, size: 18, glow: 0.6)
+
+                        Text(entry.timestamp.formatted(date: .omitted, time: .shortened))
                             .font(.system(.body, design: .rounded))
                             .monospacedDigit()
+
+                        if mixed {
+                            Text(entry.activityName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+
                         Spacer()
                     }
                     .contextMenu {
                         Button("Delete", role: .destructive) {
-                            store.remove(jewel: jewel.id, from: activity.id)
+                            store.remove(jewel: entry.id, from: entry.activityID)
                         }
                     }
                 }
                 .onDelete { offsets in
                     for index in offsets {
-                        store.remove(jewel: jewels[index].id, from: activity.id)
+                        let entry = entries[index]
+                        store.remove(jewel: entry.id, from: entry.activityID)
                     }
                 }
             }
@@ -196,7 +207,7 @@ struct DayDetailSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Chrome.panel)
         #if os(macOS)
-        .frame(width: 380, height: 460)
+        .frame(width: 400, height: 480)
         #endif
     }
 }

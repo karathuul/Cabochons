@@ -1,8 +1,15 @@
 internal import SwiftUI
 
+/// Sidebar destinations. The day is now a first-class place, not something you
+/// reach through an activity.
+enum Route: Hashable {
+    case day
+    case activity(Activity.ID)
+}
+
 struct ContentView: View {
     @Environment(LogStore.self) private var store
-    @State private var selection: Activity.ID?
+    @State private var selection: Route? = .day
     @State private var editing: Activity?
     @State private var creatingNew = false
 
@@ -10,26 +17,26 @@ struct ContentView: View {
         NavigationSplitView {
             sidebar
         } detail: {
-            if let activity = store.activity(selection) {
-                ActivityDetailView(activityID: activity.id)
-                    .id(activity.id)
-            } else {
-                DetailPlaceholder(hasActivities: !store.activities.isEmpty)
+            switch selection {
+            case .day, .none:
+                DayView()
+            case .activity(let id):
+                if store.activity(id) != nil {
+                    ActivityDetailView(activityID: id).id(id)
+                } else {
+                    DayView()
+                }
             }
         }
         .sheet(isPresented: $creatingNew) {
             ActivityEditor(mode: .create) { activity in
                 store.add(activity)
-                selection = activity.id
             }
         }
         .sheet(item: $editing) { activity in
             ActivityEditor(mode: .edit(activity)) { updated in
                 store.update(updated)
             }
-        }
-        .onAppear {
-            if selection == nil { selection = store.activities.first?.id }
         }
     }
 
@@ -39,22 +46,29 @@ struct ContentView: View {
         @Bindable var store = store
 
         return List(selection: $selection) {
-            if store.activities.isEmpty {
-                EmptySidebar { creatingNew = true }
-                    .listRowBackground(Color.clear)
-            } else {
-                ForEach(store.activities) { activity in
-                    SidebarRow(activity: activity)
-                        .tag(activity.id)
-                        .contextMenu {
-                            Button("Edit") { editing = activity }
-                            Button("Delete", role: .destructive) {
-                                if selection == activity.id { selection = nil }
-                                store.delete(activity.id)
+            Section {
+                TodayRow()
+                    .tag(Route.day)
+            }
+
+            Section("Activities") {
+                if store.activities.isEmpty {
+                    EmptySidebar { creatingNew = true }
+                        .listRowBackground(Color.clear)
+                } else {
+                    ForEach(store.activities) { activity in
+                        SidebarRow(activity: activity)
+                            .tag(Route.activity(activity.id))
+                            .contextMenu {
+                                Button("Edit") { editing = activity }
+                                Button("Delete", role: .destructive) {
+                                    if selection == .activity(activity.id) { selection = .day }
+                                    store.delete(activity.id)
+                                }
                             }
-                        }
+                    }
+                    .onMove { store.move(from: $0, to: $1) }
                 }
-                .onMove { store.move(from: $0, to: $1) }
             }
         }
         .listStyle(.sidebar)
@@ -62,7 +76,7 @@ struct ContentView: View {
         .background(Chrome.panel)
         .navigationTitle("Materia")
         #if os(macOS)
-        .frame(minWidth: 240)
+        .frame(minWidth: 250)
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -89,7 +103,44 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Sidebar row
+// MARK: - Sidebar rows
+
+private struct TodayRow: View {
+    @Environment(LogStore.self) private var store
+
+    var body: some View {
+        let stats = store.combined
+        let fills = stats.today?.fills ?? []
+
+        HStack(spacing: 12) {
+            Image(systemName: "square.grid.2x2.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(Chrome.steelHi)
+                .frame(width: 26)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Today")
+                    .font(.system(.body, design: .rounded, weight: .medium))
+
+                if fills.isEmpty {
+                    Text("no jewels yet")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    SlotRail(fills: fills, capacity: stats.capacity, size: 9, maxSlots: 14)
+                }
+            }
+
+            Spacer(minLength: 4)
+
+            Text("\(fills.count)")
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 3)
+    }
+}
 
 private struct SidebarRow: View {
     @Environment(LogStore.self) private var store
@@ -128,7 +179,7 @@ private struct SidebarRow: View {
     }
 }
 
-// MARK: - Empty states
+// MARK: - Empty state
 
 private struct EmptySidebar: View {
     var create: () -> Void
@@ -137,7 +188,7 @@ private struct EmptySidebar: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("No activities yet")
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
-            Text("Create one to get a button and a row of sockets to fill.")
+            Text("Create one to get an orb to press and sockets to fill.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Button("Create an activity", action: create)
@@ -145,24 +196,5 @@ private struct EmptySidebar: View {
                 .padding(.top, 2)
         }
         .padding(.vertical, 8)
-    }
-}
-
-private struct DetailPlaceholder: View {
-    let hasActivities: Bool
-
-    var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 18) {
-                MateriaSocket(size: 42)
-                MateriaSocket(size: 42)
-                MateriaSocket(size: 42)
-            }
-            Text(hasActivities ? "Pick an activity" : "Create an activity to begin")
-                .font(.system(.title3, design: .rounded, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Chrome.panel)
     }
 }

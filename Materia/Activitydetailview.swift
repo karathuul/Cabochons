@@ -1,5 +1,7 @@
 internal import SwiftUI
 
+/// One activity in isolation. The combined day rail lives in `DayView`; this
+/// screen is for when you want to look at a single habit's history.
 struct ActivityDetailView: View {
     @Environment(LogStore.self) private var store
     let activityID: Activity.ID
@@ -28,11 +30,6 @@ struct ActivityDetailView: View {
                     Label("Edit", systemImage: "slider.horizontal.3")
                 }
             }
-            ToolbarItem {
-                ShareLink(item: store.exportCSV()) {
-                    Label("Export CSV", systemImage: "square.and.arrow.up")
-                }
-            }
         }
         .sheet(isPresented: $editing) {
             if let activity {
@@ -40,9 +37,11 @@ struct ActivityDetailView: View {
             }
         }
         .sheet(item: $inspecting) { summary in
-            if let activity {
-                DayDetailSheet(activity: activity, summary: summary)
-            }
+            DayEntriesSheet(
+                day: summary.day,
+                capacity: summary.target,
+                activityID: activityID
+            )
         }
     }
 
@@ -89,9 +88,9 @@ struct ActivityDetailView: View {
             }
 
             SlotRail(
-                filled: stats.today,
-                capacity: activity.dailyTarget,
+                count: stats.today,
                 color: activity.color,
+                capacity: activity.dailyTarget,
                 size: 34
             )
             .animation(.spring(response: 0.35, dampingFraction: 0.6), value: stats.today)
@@ -142,7 +141,11 @@ struct ActivityDetailView: View {
             .accessibilityLabel("Slot a jewel for \(activity.name)")
 
             VStack(alignment: .leading, spacing: 10) {
-                StreakBadge(stats: stats, color: activity.color)
+                StreakBadge(
+                    streak: stats.currentStreak,
+                    today: stats.today,
+                    accent: activity.color.core
+                )
 
                 Button {
                     store.removeLastToday(activity.id)
@@ -179,7 +182,6 @@ struct ActivityDetailView: View {
 
     // MARK: History
 
-    @ViewBuilder
     private func history(activity: Activity, stats: ActivityStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("By day")
@@ -211,65 +213,6 @@ struct ActivityDetailView: View {
     }
 }
 
-// MARK: - Streak badge
-
-private struct StreakBadge: View {
-    let stats: ActivityStats
-    let color: MateriaColor
-
-    var body: some View {
-        let atRisk = Stats.streakAtRisk(stats)
-
-        HStack(spacing: 8) {
-            Image(systemName: stats.currentStreak > 0 ? "flame.fill" : "flame")
-                .font(.title3)
-                .foregroundStyle(atRisk ? Chrome.steelHi : color.core)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text("\(stats.currentStreak)")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                Text(streakCaption(atRisk: atRisk))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private func streakCaption(atRisk: Bool) -> String {
-        if stats.currentStreak == 0 { return "no streak" }
-        return atRisk ? "day streak — nothing today yet" : "day streak"
-    }
-}
-
-// MARK: - Stat tile
-
-private struct StatTile: View {
-    let label: String
-    let value: String
-    var unit: String? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .tracking(0.8)
-                .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                if let unit {
-                    Text(unit)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
 // MARK: - Day row
 
 private struct DayRow: View {
@@ -279,7 +222,7 @@ private struct DayRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(calc.label(for: summary.day))
                         .font(.system(.subheadline, design: .rounded, weight: .medium))
@@ -289,10 +232,11 @@ private struct DayRow: View {
                             .foregroundStyle(Chrome.gold)
                     }
                 }
+
                 SlotRail(
-                    filled: summary.count,
-                    capacity: summary.target,
+                    count: summary.count,
                     color: color,
+                    capacity: summary.target,
                     size: 14,
                     maxSlots: 20
                 )

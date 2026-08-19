@@ -1,11 +1,18 @@
 internal import SwiftUI
 
+// MARK: - What sits in one socket
+
+enum SlotContent: Hashable {
+    case empty
+    case filled(MateriaColor, overflow: Bool)
+}
+
 // MARK: - The orb
 
 struct MateriaOrb: View {
     let color: MateriaColor
     var size: CGFloat = 30
-    /// Jewels past the daily target get a gold rim and a star.
+    /// Jewels past the day's capacity get a gold rim and a star.
     var overflow: Bool = false
     var glow: CGFloat = 1
 
@@ -47,7 +54,7 @@ struct MateriaOrb: View {
                 .offset(x: -size * 0.14, y: -size * 0.22)
                 .blur(radius: size * 0.035)
 
-            if overflow {
+            if overflow, size >= 18 {
                 Image(systemName: "star.fill")
                     .font(.system(size: size * 0.24))
                     .foregroundStyle(Chrome.gold)
@@ -101,28 +108,23 @@ struct MateriaSocket: View {
 
 // MARK: - Linked pair
 
-/// Two sockets joined by a connector bar. This is the shape the whole app is
-/// built around — sockets always come in pairs, and the bar is what makes a
-/// half-filled pair read as unfinished.
+/// Two sockets joined by a connector bar. An odd capacity ends in a single
+/// unlinked socket, which is how FF7 equipment actually looks — don't pad it
+/// out to an even pair.
 struct LinkedPair: View {
-    /// 1 or 2. An odd capacity ends in a single unlinked socket, which is how
-    /// FF7 equipment actually looks — don't pad it out to an even pair.
-    let slotCount: Int
-    let filledCount: Int      // 0, 1 or 2
-    let overflowCount: Int    // how many of the filled ones are past target
-    let color: MateriaColor
+    let contents: [SlotContent]   // 1 or 2 entries
     var size: CGFloat = 30
 
     private var spacing: CGFloat { size * 0.62 }
 
     var body: some View {
         HStack(spacing: spacing) {
-            ForEach(0..<max(1, slotCount), id: \.self) { index in
-                slot(index: index)
+            ForEach(Array(contents.enumerated()), id: \.offset) { _, content in
+                slot(content)
             }
         }
         .background(alignment: .center) {
-            if slotCount > 1 {
+            if contents.count > 1 {
                 Capsule()
                     .fill(
                         LinearGradient(
@@ -133,63 +135,72 @@ struct LinkedPair: View {
                     )
                     .frame(width: spacing + size * 0.5, height: size * 0.17)
                     .overlay(
-                        Capsule()
-                            .stroke(Color.black.opacity(0.45), lineWidth: 0.5)
+                        Capsule().stroke(Color.black.opacity(0.45), lineWidth: 0.5)
                     )
             }
         }
     }
 
     @ViewBuilder
-    private func slot(index: Int) -> some View {
-        if index < filledCount {
-            MateriaOrb(
-                color: color,
-                size: size,
-                overflow: index >= (filledCount - overflowCount)
-            )
-        } else {
+    private func slot(_ content: SlotContent) -> some View {
+        switch content {
+        case .empty:
             MateriaSocket(size: size)
+        case .filled(let color, let overflow):
+            MateriaOrb(color: color, size: size, overflow: overflow)
         }
     }
 }
 
 // MARK: - Slot rail
 
-/// A full day of sockets. Capacity comes from the activity's target; anything
-/// logged past capacity extends the rail with gold-rimmed orbs rather than
-/// being hidden, because over-delivering shouldn't be invisible.
+/// One day of sockets. `fills` is in the order the jewels were earned, so a
+/// combined day rail reads left to right as the day progressed and mixes
+/// colours from every activity. Anything past capacity extends the rail with
+/// gold-rimmed orbs rather than being hidden — over-delivering shouldn't look
+/// identical to hitting the number exactly.
 struct SlotRail: View {
-    let filled: Int
+    let fills: [MateriaColor]
     let capacity: Int
-    let color: MateriaColor
     var size: CGFloat = 30
     var maxSlots: Int = 60
 
-    private var totalSlots: Int {
-        min(max(capacity, filled), maxSlots)
+    /// Convenience for a single-activity rail.
+    init(count: Int, color: MateriaColor, capacity: Int, size: CGFloat = 30, maxSlots: Int = 60) {
+        self.fills = Array(repeating: color, count: max(0, count))
+        self.capacity = capacity
+        self.size = size
+        self.maxSlots = maxSlots
+    }
+
+    init(fills: [MateriaColor], capacity: Int, size: CGFloat = 30, maxSlots: Int = 60) {
+        self.fills = fills
+        self.capacity = capacity
+        self.size = size
+        self.maxSlots = maxSlots
     }
 
     private var truncated: Int {
-        max(0, filled - maxSlots)
+        max(0, fills.count - maxSlots)
+    }
+
+    private var slots: [SlotContent] {
+        let total = max(1, min(max(capacity, fills.count), maxSlots))
+        return (0..<total).map { index in
+            index < fills.count
+                ? .filled(fills[index], overflow: index >= capacity)
+                : .empty
+        }
     }
 
     var body: some View {
-        let slots = max(totalSlots, 1)
-        let starts = stride(from: 0, to: slots, by: 2).map { $0 }
+        let groups = stride(from: 0, to: slots.count, by: 2).map { start in
+            Array(slots[start..<min(start + 2, slots.count)])
+        }
 
         FlowLayout(spacing: size * 0.44, lineSpacing: size * 0.40) {
-            ForEach(starts, id: \.self) { start in
-                let slotsHere = min(2, slots - start)
-                let filledHere = min(slotsHere, max(0, filled - start))
-                let overflowHere = min(filledHere, max(0, (start + filledHere) - capacity))
-                LinkedPair(
-                    slotCount: slotsHere,
-                    filledCount: filledHere,
-                    overflowCount: overflowHere,
-                    color: color,
-                    size: size
-                )
+            ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                LinkedPair(contents: group, size: size)
             }
 
             if truncated > 0 {
@@ -205,53 +216,70 @@ struct SlotRail: View {
 
 // MARK: - Flow layout
 
-/// Wraps subviews onto as many lines as needed. Used so linked pairs never get
-/// split across a line break.
+/// Wraps subviews onto as many lines as needed, so linked pairs never get split
+/// across a line break.
+///
+/// `sizeThatFits` and `placeSubviews` MUST agree on where the breaks fall. They
+/// run the same arrangement routine for exactly that reason: computing the
+/// wrap twice by different expression orders leaves the two disagreeing by a
+/// float ulp, which silently costs you a line of reported height and draws the
+/// overflow outside its container.
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
     var lineSpacing: CGFloat = 8
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
+    /// Slack on the wrap test. Absorbs accumulated float error without being
+    /// wide enough to let a real overflow through.
+    private let tolerance: CGFloat = 0.5
+
+    private struct Arrangement {
+        var offsets: [CGPoint]
+        var size: CGSize
+    }
+
+    private func arrange(sizes: [CGSize], maxWidth: CGFloat) -> Arrangement {
+        var offsets: [CGPoint] = []
+        offsets.reserveCapacity(sizes.count)
+
         var x: CGFloat = 0
         var y: CGFloat = 0
         var lineHeight: CGFloat = 0
         var widest: CGFloat = 0
 
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > maxWidth {
+        for size in sizes {
+            if x > 0, x + size.width > maxWidth + tolerance {
                 x = 0
                 y += lineHeight + lineSpacing
                 lineHeight = 0
             }
+
+            offsets.append(CGPoint(x: x, y: y))
             x += size.width + spacing
             widest = max(widest, x - spacing)
             lineHeight = max(lineHeight, size.height)
         }
 
-        return CGSize(width: maxWidth.isFinite ? min(widest, maxWidth) : widest,
-                      height: y + lineHeight)
+        return Arrangement(
+            offsets: offsets,
+            size: CGSize(width: widest, height: y + lineHeight)
+        )
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        return arrange(sizes: sizes, maxWidth: proposal.width ?? .infinity).size
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var lineHeight: CGFloat = 0
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let arrangement = arrange(sizes: sizes, maxWidth: bounds.width)
 
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x > 0, x + size.width > bounds.width {
-                x = 0
-                y += lineHeight + lineSpacing
-                lineHeight = 0
-            }
+        for (index, subview) in subviews.enumerated() {
+            let offset = arrangement.offsets[index]
             subview.place(
-                at: CGPoint(x: bounds.minX + x, y: bounds.minY + y),
-                proposal: ProposedViewSize(size)
+                at: CGPoint(x: bounds.minX + offset.x, y: bounds.minY + offset.y),
+                proposal: ProposedViewSize(sizes[index])
             )
-            x += size.width + spacing
-            lineHeight = max(lineHeight, size.height)
         }
     }
 }
@@ -287,7 +315,63 @@ extension View {
     }
 }
 
-// MARK: - Press feedback
+// MARK: - Shared bits
+
+struct StatTile: View {
+    let label: String
+    let value: String
+    var unit: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .tracking(0.8)
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                if let unit {
+                    Text(unit)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct StreakBadge: View {
+    let streak: Int
+    let today: Int
+    let accent: Color
+
+    var body: some View {
+        let atRisk = Stats.streakAtRisk(currentStreak: streak, today: today)
+
+        HStack(spacing: 8) {
+            Image(systemName: streak > 0 ? "flame.fill" : "flame")
+                .font(.title3)
+                .foregroundStyle(atRisk ? Chrome.steelHi : accent)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("\(streak)")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                Text(caption(atRisk: atRisk))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func caption(atRisk: Bool) -> String {
+        if streak == 0 { return "no streak" }
+        return atRisk ? "day streak — nothing today yet" : "day streak"
+    }
+}
 
 struct OrbButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

@@ -30,8 +30,23 @@ final class LogStore {
         return activities.first { $0.id == id }
     }
 
+    func activityName(_ id: UUID) -> String {
+        activities.first { $0.id == id }?.name ?? "Deleted"
+    }
+
     func stats(for activity: Activity) -> ActivityStats {
         Stats.compute(for: activity, calc: calc)
+    }
+
+    /// Every activity folded onto one day rail.
+    var combined: CombinedStats {
+        Stats.combine(activities: activities, calc: calc)
+    }
+
+    /// Every socket the day has, summed across activities. The day's loadout is
+    /// the union of what each activity contributes.
+    var dailyCapacity: Int {
+        activities.reduce(0) { $0 + $1.dailyTarget }
     }
 
     func todayCount(for activity: Activity) -> Int {
@@ -39,6 +54,39 @@ final class LogStore {
         return activity.jewels.reduce(into: 0) { total, jewel in
             if calc.day(for: jewel.timestamp) == today { total += 1 }
         }
+    }
+
+    /// Every jewel tagged with where it came from, chronological.
+    func allEntries() -> [LoggedJewel] {
+        activities
+            .flatMap { activity in
+                activity.jewels.map {
+                    LoggedJewel(
+                        id: $0.id,
+                        timestamp: $0.timestamp,
+                        activityID: activity.id,
+                        activityName: activity.name,
+                        color: activity.color
+                    )
+                }
+            }
+            .sorted { $0.timestamp < $1.timestamp }
+    }
+
+    /// Newest first, across every activity unless one is named.
+    func entries(on day: Date, activityID: UUID? = nil) -> [LoggedJewel] {
+        allEntries()
+            .filter {
+                calc.day(for: $0.timestamp) == day
+                    && (activityID == nil || $0.activityID == activityID)
+            }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
+    func jewels(on day: Date, for activity: Activity) -> [Jewel] {
+        activity.jewels
+            .filter { calc.day(for: $0.timestamp) == day }
+            .sorted { $0.timestamp > $1.timestamp }
     }
 
     // MARK: Mutation
@@ -73,31 +121,27 @@ final class LogStore {
         return true
     }
 
-    /// Removes the most recent jewel from today. Misfires happen.
-    @discardableResult
-    func removeLastToday(_ id: Activity.ID) -> Bool {
-        guard let index = activities.firstIndex(where: { $0.id == id }) else { return false }
-        let today = calc.today
-        let candidates = activities[index].jewels
-            .enumerated()
-            .filter { calc.day(for: $0.element.timestamp) == today }
-            .max { $0.element.timestamp < $1.element.timestamp }
-        guard let target = candidates else { return false }
-        activities[index].jewels.remove(at: target.offset)
-        save()
-        return true
-    }
-
     func remove(jewel: Jewel.ID, from id: Activity.ID) {
         guard let index = activities.firstIndex(where: { $0.id == id }) else { return }
         activities[index].jewels.removeAll { $0.id == jewel }
         save()
     }
 
-    func jewels(on day: Date, for activity: Activity) -> [Jewel] {
-        activity.jewels
-            .filter { calc.day(for: $0.timestamp) == day }
-            .sorted { $0.timestamp > $1.timestamp }
+    /// Removes today's most recent jewel for one activity.
+    @discardableResult
+    func removeLastToday(_ id: Activity.ID) -> Bool {
+        guard let newest = entries(on: calc.today, activityID: id).first else { return false }
+        remove(jewel: newest.id, from: newest.activityID)
+        return true
+    }
+
+    /// Removes today's most recent jewel whichever activity it came from —
+    /// undo on the day rail should pop the last socket you actually filled.
+    @discardableResult
+    func removeLastToday() -> Bool {
+        guard let newest = entries(on: calc.today).first else { return false }
+        remove(jewel: newest.id, from: newest.activityID)
+        return true
     }
 
     // MARK: Persistence
@@ -139,15 +183,13 @@ final class LogStore {
         try? data.write(to: fileURL, options: .atomic)
     }
 
-    /// Plain-text export. Every logged timestamp, one per line.
+    /// Chronological across all activities, so it matches the day rail's order.
     func exportCSV() -> String {
-        var lines = ["activity,color,target,timestamp"]
+        var lines = ["timestamp,activity,color"]
         let formatter = ISO8601DateFormatter()
-        for activity in activities {
-            let name = activity.name.replacingOccurrences(of: "\"", with: "\"\"")
-            for jewel in activity.jewels.sorted(by: { $0.timestamp < $1.timestamp }) {
-                lines.append("\"\(name)\",\(activity.color.rawValue),\(activity.dailyTarget),\(formatter.string(from: jewel.timestamp))")
-            }
+        for entry in allEntries() {
+            let name = entry.activityName.replacingOccurrences(of: "\"", with: "\"\"")
+            lines.append("\(formatter.string(from: entry.timestamp)),\"\(name)\",\(entry.color.rawValue)")
         }
         return lines.joined(separator: "\n")
     }
