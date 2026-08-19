@@ -185,11 +185,11 @@ final class LogStore {
 
     /// Chronological across all activities, so it matches the day rail's order.
     func exportCSV() -> String {
-        var lines = ["timestamp,activity,color"]
+        var lines = ["timestamp,activity,colour"]
         let formatter = ISO8601DateFormatter()
         for entry in allEntries() {
             let name = entry.activityName.replacingOccurrences(of: "\"", with: "\"\"")
-            lines.append("\(formatter.string(from: entry.timestamp)),\"\(name)\",\(entry.color.rawValue)")
+            lines.append("\(formatter.string(from: entry.timestamp)),\"\(name)\",\(entry.color.hex)")
         }
         return lines.joined(separator: "\n")
     }

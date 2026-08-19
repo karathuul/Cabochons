@@ -13,9 +13,14 @@ struct ActivityEditor: View {
     let mode: Mode
     let onSave: (Activity) -> Void
 
+    @Environment(\.self) private var environment
+
     @State private var name = ""
     @State private var color: MateriaColor = .magic
     @State private var target = 4
+    /// Mirrors `color` for the system picker, which speaks in `Color`.
+    @State private var picked: Color = MateriaColor.magic.core
+    @State private var adjusted = false
 
     init(mode: Mode, onSave: @escaping (Activity) -> Void) {
         self.mode = mode
@@ -24,6 +29,7 @@ struct ActivityEditor: View {
             _name = State(initialValue: activity.name)
             _color = State(initialValue: activity.color)
             _target = State(initialValue: activity.dailyTarget)
+            _picked = State(initialValue: activity.color.core)
         }
     }
 
@@ -44,28 +50,58 @@ struct ActivityEditor: View {
                     .font(.system(.body, design: .rounded))
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 FieldLabel("Jewel")
+
                 HStack(spacing: 14) {
-                    ForEach(MateriaColor.allCases) { option in
+                    ForEach(MateriaColor.presets) { preset in
                         Button {
-                            color = option
+                            color = preset.color
+                            picked = preset.color.core
                         } label: {
-                            MateriaOrb(color: option, size: 38, glow: color == option ? 1.4 : 0.4)
-                                .overlay {
-                                    Circle()
-                                        .strokeBorder(.white.opacity(color == option ? 0.9 : 0), lineWidth: 2)
-                                        .padding(-4)
-                                }
-                                .saturation(color == option ? 1 : 0.55)
+                            MateriaOrb(
+                                color: preset.color,
+                                size: 38,
+                                glow: color.matches(preset.color) ? 1.4 : 0.4
+                            )
+                            .overlay {
+                                Circle()
+                                    .strokeBorder(
+                                        .white.opacity(color.matches(preset.color) ? 0.9 : 0),
+                                        lineWidth: 2
+                                    )
+                                    .padding(-4)
+                            }
+                            .saturation(color.matches(preset.color) ? 1 : 0.55)
                         }
                         .buttonStyle(OrbButtonStyle())
-                        .help(option.displayName)
+                        .help(preset.name)
                     }
                 }
-                Text(color.displayName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 12) {
+                    ColorPicker("Custom", selection: $picked, supportsOpacity: false)
+                        .labelsHidden()
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(color.displayName)
+                            .font(.system(.caption, design: .rounded, weight: .medium))
+                        if adjusted {
+                            // Say so rather than silently overriding the pick.
+                            Text("brightened to read against the socket")
+                                .font(.caption2)
+                                .foregroundStyle(Chrome.gold)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .onChange(of: picked) { _, new in
+                    let rgb = new.resolve(in: environment)
+                    let r = Double(rgb.red), g = Double(rgb.green), b = Double(rgb.blue)
+                    color = MateriaColor(red: r, green: g, blue: b)
+                    adjusted = MateriaColor.wasAdjusted(red: r, green: g, blue: b)
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
