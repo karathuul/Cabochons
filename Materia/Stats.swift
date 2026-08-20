@@ -167,9 +167,10 @@ enum Stats {
     static func combine(activities: [Activity], calc: DayCalculator) -> CombinedStats {
         // Only daily activities can define a day's sockets. A monthly activity
         // owes you nothing in particular today, so folding its target into a
-        // daily capacity would invent a debt that doesn't exist.
+        // daily capacity would invent a debt that doesn't exist. Hidden ones
+        // ask for nothing at all.
         let capacity = activities
-            .filter(\.cadence.isDaily)
+            .filter { $0.cadence.isDaily && !$0.isHidden }
             .reduce(0) { $0 + $1.target }
 
         var byDay: [Date: [LoggedJewel]] = [:]
@@ -221,7 +222,11 @@ enum Stats {
         stats.today = days.first { $0.day == calc.today }
         stats.currentStreak = currentStreak(days: Set(byDay.keys), calc: calc)
         stats.longestStreak = longestStreak(days: Set(byDay.keys), calc: calc)
-        stats.progress = activities.map { progress(for: $0, calc: calc) }
+        // Jewels from hidden activities stay on every rail — they were earned.
+        // Only the forward-looking list drops them.
+        stats.progress = activities
+            .filter { !$0.isHidden }
+            .map { progress(for: $0, calc: calc) }
         return stats
     }
 

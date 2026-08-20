@@ -12,6 +12,9 @@ struct ContentView: View {
     @State private var selection: Route? = .day
     @State private var editing: Activity?
     @State private var creatingNew = false
+    /// Persisted so the sidebar doesn't re-expand every launch — the whole
+    /// point of hiding is to get things out of the way.
+    @AppStorage("hiddenSectionExpanded") private var hiddenExpanded = false
 
     var body: some View {
         NavigationSplitView {
@@ -55,19 +58,72 @@ struct ContentView: View {
                 if store.activities.isEmpty {
                     EmptySidebar { creatingNew = true }
                         .listRowBackground(Color.clear)
+                } else if store.visibleActivities.isEmpty {
+                    Text("All hidden")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 } else {
-                    ForEach(store.activities) { activity in
+                    ForEach(store.visibleActivities) { activity in
                         SidebarRow(activity: activity)
                             .tag(Route.activity(activity.id))
                             .contextMenu {
                                 Button("Edit") { editing = activity }
+                                Button("Hide") { store.setHidden(activity.id, true) }
+                                Divider()
                                 Button("Delete", role: .destructive) {
                                     if selection == .activity(activity.id) { selection = .day }
                                     store.delete(activity.id)
                                 }
                             }
                     }
-                    .onMove { store.move(from: $0, to: $1) }
+                }
+            }
+
+            if !store.hiddenActivities.isEmpty {
+                Section {
+                    if hiddenExpanded {
+                        ForEach(store.hiddenActivities) { activity in
+                            SidebarRow(activity: activity)
+                                .tag(Route.activity(activity.id))
+                                .contextMenu {
+                                    Button("Unhide") { store.setHidden(activity.id, false) }
+                                    Divider()
+                                    Button("Delete", role: .destructive) {
+                                        if selection == .activity(activity.id) { selection = .day }
+                                        store.delete(activity.id)
+                                    }
+                                }
+                        }
+                    }
+                } header: {
+                    Button {
+                        withAnimation(.snappy(duration: 0.22)) {
+                            hiddenExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .rotationEffect(.degrees(hiddenExpanded ? 90 : 0))
+
+                            Text("Hidden")
+
+                            Text("\(store.hiddenActivities.count)")
+                                .monospacedDigit()
+                                .foregroundStyle(.tertiary)
+
+                            Spacer(minLength: 0)
+                        }
+                        // Without this the row only responds to taps on the
+                        // glyphs themselves, not the empty space beside them.
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                } footer: {
+                    if hiddenExpanded {
+                        Text("Archived activity jewels remain for previous days.")
+                            .font(.caption2)
+                    }
                 }
             }
         }
@@ -152,7 +208,7 @@ private struct SidebarRow: View {
         HStack(spacing: 12) {
             ZStack {
                 MateriaSocket(size: 26)
-                if progress.count > 0 {
+                if progress.count > 0, !activity.isHidden {
                     MateriaOrb(color: activity.color, size: 26, glow: 0.7)
                 }
             }
@@ -161,22 +217,36 @@ private struct SidebarRow: View {
                 Text(activity.name)
                     .font(.system(.body, design: .rounded, weight: .medium))
                     .lineLimit(1)
-                Text("\(progress.count) of \(progress.target) this \(progress.cadence.phrase)")
-                    .font(.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+
+                if activity.isHidden {
+                    Text("\(activity.jewels.count) kept")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("\(progress.count) of \(progress.target) this \(progress.cadence.phrase)")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 4)
 
-            if progress.isMet {
+            if activity.isHidden {
+                Image(systemName: "eye.slash")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            } else if progress.isMet {
                 Image(systemName: "star.fill")
                     .font(.caption)
                     .foregroundStyle(Chrome.gold)
             }
         }
         .padding(.vertical, 3)
+        .opacity(activity.isHidden ? 0.55 : 1)
+        .saturation(activity.isHidden ? 0.3 : 1)
     }
 }
 

@@ -79,6 +79,9 @@ struct Activity: Identifiable, Codable, Hashable {
     var cadence: Cadence = .daily
     var jewels: [Jewel] = []
     var createdAt: Date = .now
+    /// Hidden activities keep every jewel they ever earned but stop asking for
+    /// anything: no sockets, no button, no place in the day's capacity.
+    var isHidden: Bool = false
 
     /// Newest first.
     var sortedJewels: [Jewel] {
@@ -88,7 +91,7 @@ struct Activity: Identifiable, Codable, Hashable {
     // MARK: Codable, with migration
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, color, target, cadence, jewels, createdAt
+        case id, name, color, target, cadence, jewels, createdAt, isHidden
         case dailyTarget   // pre-cadence name
     }
 
@@ -99,7 +102,8 @@ struct Activity: Identifiable, Codable, Hashable {
         target: Int,
         cadence: Cadence = .daily,
         jewels: [Jewel] = [],
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        isHidden: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -108,6 +112,7 @@ struct Activity: Identifiable, Codable, Hashable {
         self.cadence = cadence
         self.jewels = jewels
         self.createdAt = createdAt
+        self.isHidden = isHidden
     }
 
     /// Files written before cadences stored `dailyTarget` and had no `cadence`.
@@ -123,6 +128,7 @@ struct Activity: Identifiable, Codable, Hashable {
         cadence = try container.decodeIfPresent(Cadence.self, forKey: .cadence) ?? .daily
         jewels = try container.decodeIfPresent([Jewel].self, forKey: .jewels) ?? []
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
+        isHidden = try container.decodeIfPresent(Bool.self, forKey: .isHidden) ?? false
     }
 
     /// Written by hand because `CodingKeys` carries `dailyTarget`, a key with
@@ -142,6 +148,7 @@ struct Activity: Identifiable, Codable, Hashable {
         try container.encode(cadence, forKey: .cadence)
         try container.encode(jewels, forKey: .jewels)
         try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(isHidden, forKey: .isHidden)
     }
 }
 

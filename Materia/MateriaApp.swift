@@ -60,10 +60,10 @@ private struct MenuBarContent: View {
     let store: LogStore
 
     var body: some View {
-        if store.activities.isEmpty {
+        if store.visibleActivities.isEmpty {
             Text("No activities yet")
         } else {
-            ForEach(store.activities) { activity in
+            ForEach(store.visibleActivities) { activity in
                 let progress = store.progress(for: activity)
                 Button {
                     store.slot(activity.id)

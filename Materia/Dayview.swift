@@ -63,8 +63,10 @@ struct DayView: View {
                 }
             }
 
-            if store.activities.isEmpty {
-                Text("Create an activity and its jewels will land here.")
+            if store.visibleActivities.isEmpty && fills.isEmpty {
+                Text(store.activities.isEmpty
+                     ? "Create an activity and its jewels will land here."
+                     : "Everything's hidden. Unhide one from the sidebar.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else if fills.isEmpty && stats.capacity == 0 {
@@ -94,7 +96,7 @@ struct DayView: View {
 
     @ViewBuilder
     private func loadout(_ stats: CombinedStats) -> some View {
-        if !store.activities.isEmpty {
+        if !store.visibleActivities.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("Slot a jewel")
@@ -113,7 +115,7 @@ struct DayView: View {
                 // Doubles as the rail's legend — this is where you learn which
                 // colour belongs to which activity.
                 FlowLayout(spacing: 18, lineSpacing: 16) {
-                    ForEach(store.activities) { activity in
+                    ForEach(store.visibleActivities) { activity in
                         ActivityButton(activity: activity) {
                             store.slot(activity.id)
                             pulse += 1
@@ -124,7 +126,7 @@ struct DayView: View {
                 StreakBadge(
                     streak: stats.currentStreak,
                     today: stats.todayCount,
-                    accent: store.activities.first?.color.core ?? Chrome.steelHi
+                    accent: store.visibleActivities.first?.color.core ?? Chrome.steelHi
                 )
                 .padding(.top, 2)
             }

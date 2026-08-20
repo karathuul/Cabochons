@@ -24,10 +24,25 @@ struct ActivityDetailView: View {
         .navigationTitle(activity?.name ?? "")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    editing = true
+                Menu {
+                    Button {
+                        editing = true
+                    } label: {
+                        Label("Edit", systemImage: "slider.horizontal.3")
+                    }
+
+                    if let activity {
+                        Button {
+                            store.setHidden(activity.id, !activity.isHidden)
+                        } label: {
+                            Label(
+                                activity.isHidden ? "Unhide" : "Hide",
+                                systemImage: activity.isHidden ? "eye" : "eye.slash"
+                            )
+                        }
+                    }
                 } label: {
-                    Label("Edit", systemImage: "slider.horizontal.3")
+                    Label("Options", systemImage: "slider.horizontal.3")
                 }
             }
         }
@@ -57,6 +72,9 @@ struct ActivityDetailView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
+                if activity.isHidden {
+                    hiddenBanner(activity)
+                }
                 slotPanel(activity: activity, stats: stats)
                 tapRow(activity: activity, stats: stats)
                 statsPanel(stats)
@@ -67,6 +85,32 @@ struct ActivityDetailView: View {
             .frame(maxWidth: .infinity)
         }
         .sensoryFeedback(.impact(weight: .medium), trigger: pulse)
+    }
+
+    // MARK: Hidden
+
+    private func hiddenBanner(_ activity: Activity) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "eye.slash")
+                .foregroundStyle(Chrome.steelHi)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Hidden")
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                Text("\(activity.jewels.count) jewels have been archived for this activity.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Button("Unhide") {
+                store.setHidden(activity.id, false)
+            }
+            .buttonStyle(.bordered)
+        }
+        .panel()
     }
 
     // MARK: This period's sockets

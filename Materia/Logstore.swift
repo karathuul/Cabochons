@@ -25,6 +25,16 @@ final class LogStore {
 
     // MARK: Lookup
 
+    /// Everything still in play. Hidden activities keep their jewels but drop
+    /// out of every surface that asks you to do something.
+    var visibleActivities: [Activity] {
+        activities.filter { !$0.isHidden }
+    }
+
+    var hiddenActivities: [Activity] {
+        activities.filter(\.isHidden)
+    }
+
     func activity(_ id: Activity.ID?) -> Activity? {
         guard let id else { return nil }
         return activities.first { $0.id == id }
@@ -43,10 +53,13 @@ final class LogStore {
         Stats.combine(activities: activities, calc: calc)
     }
 
-    /// Sockets the day has, from daily activities only. A monthly activity owes
-    /// nothing in particular today, so it contributes none.
+    /// Sockets the day has, from visible daily activities only. A monthly
+    /// activity owes nothing in particular today, and a hidden one owes nothing
+    /// at all.
     var dailyCapacity: Int {
-        activities.filter(\.cadence.isDaily).reduce(0) { $0 + $1.target }
+        activities
+            .filter { $0.cadence.isDaily && !$0.isHidden }
+            .reduce(0) { $0 + $1.target }
     }
 
     func todayCount(for activity: Activity) -> Int {
@@ -120,6 +133,13 @@ final class LogStore {
     func update(_ activity: Activity) {
         guard let index = activities.firstIndex(where: { $0.id == activity.id }) else { return }
         activities[index] = activity
+        save()
+    }
+
+    /// Hiding is the reversible option; `delete` is the one that loses jewels.
+    func setHidden(_ id: Activity.ID, _ hidden: Bool) {
+        guard let index = activities.firstIndex(where: { $0.id == id }) else { return }
+        activities[index].isHidden = hidden
         save()
     }
 
