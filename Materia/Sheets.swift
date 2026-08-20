@@ -87,8 +87,8 @@ struct ActivityEditor: View {
                         Text(color.displayName)
                             .font(.system(.caption, design: .rounded, weight: .medium))
                         if adjusted {
-                            // Say so rather than silently overriding the pick.
-                            Text("brightened to read against the socket")
+                            // Declare that we are overriding the user's color selection.
+                            Text("The selected color brightened to read against the socket.")
                                 .font(.caption2)
                                 .foregroundStyle(Chrome.gold)
                         }
