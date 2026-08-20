@@ -64,10 +64,11 @@ private struct MenuBarContent: View {
             Text("No activities yet")
         } else {
             ForEach(store.activities) { activity in
+                let progress = store.progress(for: activity)
                 Button {
                     store.slot(activity.id)
                 } label: {
-                    Text("\(activity.name)  ·  \(store.todayCount(for: activity))/\(activity.dailyTarget)")
+                    Text("\(activity.name)  ·  \(progress.count)/\(progress.target)")
                 }
             }
         }

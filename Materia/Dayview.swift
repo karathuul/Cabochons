@@ -15,6 +15,7 @@ struct DayView: View {
             VStack(alignment: .leading, spacing: 22) {
                 todayPanel(stats)
                 loadout(stats)
+                duePanel(stats)
                 statsPanel(stats)
                 history(stats)
             }
@@ -53,15 +54,23 @@ struct DayView: View {
                     Text("\(fills.count)")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                    Text("/ \(stats.capacity)")
-                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                    if stats.capacity > 0 {
+                        Text("/ \(stats.capacity)")
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
             if store.activities.isEmpty {
                 Text("Create an activity and its jewels will land here.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else if fills.isEmpty && stats.capacity == 0 {
+                // Nothing daily is due and nothing's been logged, so there are
+                // no sockets to draw. Everything lives in the period list below.
+                Text("Nothing logged today.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -123,6 +132,33 @@ struct DayView: View {
         }
     }
 
+    // MARK: Where each activity stands
+
+    /// Carries the weight for non-daily activities. A day rail can't say
+    /// anything useful about a monthly commitment, so this does.
+    @ViewBuilder
+    private func duePanel(_ stats: CombinedStats) -> some View {
+        let outstanding = stats.progress.filter { !$0.cadence.isDaily }
+
+        if !outstanding.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("This period")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+
+                LazyVStack(spacing: 0) {
+                    ForEach(outstanding) { item in
+                        ProgressRow(item: item)
+
+                        if item.id != outstanding.last?.id {
+                            Divider().overlay(Chrome.steel.opacity(0.25))
+                        }
+                    }
+                }
+            }
+            .panel()
+        }
+    }
+
     // MARK: Numbers
 
     private func statsPanel(_ stats: CombinedStats) -> some View {
@@ -176,13 +212,63 @@ struct DayView: View {
 
 // MARK: - Tap target
 
+private struct ProgressRow: View {
+    let item: PeriodProgress
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(item.name)
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .lineLimit(1)
+                    if item.isMet {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Chrome.gold)
+                    }
+                }
+
+                SlotRail(
+                    count: item.count,
+                    color: item.color,
+                    capacity: item.target,
+                    size: 13,
+                    maxSlots: 20
+                )
+
+                Text(caption)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Text("\(item.count)/\(item.target)")
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(item.isMet ? Chrome.gold : .primary)
+        }
+        .padding(.vertical, 10)
+    }
+
+    private var caption: String {
+        if item.isMet {
+            return "\(item.periodLabel) · done"
+        }
+        let days = item.daysRemaining
+        let unit = days == 1 ? "day" : "days"
+        return "\(item.periodLabel) · \(item.remaining) to go, \(days) \(unit) left"
+    }
+}
+
 private struct ActivityButton: View {
     @Environment(LogStore.self) private var store
     let activity: Activity
     let action: () -> Void
 
     var body: some View {
-        let today = store.todayCount(for: activity)
+        let progress = store.progress(for: activity)
 
         Button(action: action) {
             VStack(spacing: 6) {
@@ -210,10 +296,10 @@ private struct ActivityButton: View {
                     .font(.system(.caption, design: .rounded, weight: .medium))
                     .lineLimit(1)
 
-                Text("\(today)/\(activity.dailyTarget)")
+                Text("\(progress.count)/\(progress.target)")
                     .font(.caption2)
                     .monospacedDigit()
-                    .foregroundStyle(today >= activity.dailyTarget ? Chrome.gold : .secondary)
+                    .foregroundStyle(progress.isMet ? Chrome.gold : .secondary)
             }
             .frame(width: 104)
         }

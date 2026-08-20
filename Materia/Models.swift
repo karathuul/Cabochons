@@ -9,20 +9,139 @@ struct Jewel: Identifiable, Codable, Hashable {
     var timestamp: Date
 }
 
+// MARK: - Cadence
+
+/// How often an activity comes due. The app's unit of time is the *period*,
+/// not the day — "3 times every 2 weeks" and "once a month" are as valid as
+/// "4 times a day".
+struct Cadence: Codable, Hashable {
+    enum Unit: String, Codable, CaseIterable, Identifiable {
+        case day, week, month
+        var id: String { rawValue }
+
+        func label(count: Int) -> String {
+            let stem: String
+            switch self {
+            case .day:   stem = "day"
+            case .week:  stem = "week"
+            case .month: stem = "month"
+            }
+            return count == 1 ? stem : stem + "s"
+        }
+    }
+
+    var count: Int
+    var unit: Unit
+
+    init(count: Int, unit: Unit) {
+        self.count = max(1, count)
+        self.unit = unit
+    }
+
+    static let daily = Cadence(count: 1, unit: .day)
+    static let weekly = Cadence(count: 1, unit: .week)
+    static let monthly = Cadence(count: 1, unit: .month)
+
+    static let presets: [Cadence] = [
+        .daily,
+        Cadence(count: 3, unit: .day),
+        .weekly,
+        Cadence(count: 2, unit: .week),
+        .monthly,
+        Cadence(count: 3, unit: .month)
+    ]
+
+    var isDaily: Bool { count == 1 && unit == .day }
+
+    /// "day", "3 days", "2 weeks"
+    var phrase: String {
+        count == 1 ? unit.label(count: 1) : "\(count) \(unit.label(count: count))"
+    }
+
+    /// Length in days. Nil for month-based cadences, which vary.
+    var lengthInDays: Int? {
+        switch unit {
+        case .day:   return count
+        case .week:  return count * 7
+        case .month: return nil
+        }
+    }
+}
+
 // MARK: - Activity
 
 struct Activity: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var name: String
     var color: MateriaColor
-    /// How many sockets the day has. Filling all of them masters the day.
-    var dailyTarget: Int
+    /// Sockets per period.
+    var target: Int
+    var cadence: Cadence = .daily
     var jewels: [Jewel] = []
     var createdAt: Date = .now
 
     /// Newest first.
     var sortedJewels: [Jewel] {
         jewels.sorted { $0.timestamp > $1.timestamp }
+    }
+
+    // MARK: Codable, with migration
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, color, target, cadence, jewels, createdAt
+        case dailyTarget   // pre-cadence name
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        color: MateriaColor,
+        target: Int,
+        cadence: Cadence = .daily,
+        jewels: [Jewel] = [],
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.name = name
+        self.color = color
+        self.target = target
+        self.cadence = cadence
+        self.jewels = jewels
+        self.createdAt = createdAt
+    }
+
+    /// Files written before cadences stored `dailyTarget` and had no `cadence`.
+    /// Fall back to both rather than throwing, or the whole log reads as empty.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try container.decode(String.self, forKey: .name)
+        color = try container.decode(MateriaColor.self, forKey: .color)
+        target = try container.decodeIfPresent(Int.self, forKey: .target)
+            ?? container.decodeIfPresent(Int.self, forKey: .dailyTarget)
+            ?? 1
+        cadence = try container.decodeIfPresent(Cadence.self, forKey: .cadence) ?? .daily
+        jewels = try container.decodeIfPresent([Jewel].self, forKey: .jewels) ?? []
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
+    }
+
+    /// Written by hand because `CodingKeys` carries `dailyTarget`, a key with
+    /// no matching property. Swift synthesises `encode(to:)` by pairing each
+    /// stored property with its key, so a case that pairs with nothing makes
+    /// synthesis fail — and only on the encode side, since `init(from:)` is
+    /// custom.
+    ///
+    /// `dailyTarget` is read-only: it's accepted on the way in from old files
+    /// and never written back out.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(color, forKey: .color)
+        try container.encode(target, forKey: .target)
+        try container.encode(cadence, forKey: .cadence)
+        try container.encode(jewels, forKey: .jewels)
+        try container.encode(createdAt, forKey: .createdAt)
     }
 }
 
@@ -323,5 +442,80 @@ struct DayCalculator {
         case 1:  return "Yesterday"
         default: return day.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
         }
+    }
+
+    // MARK: Periods
+
+    /// Which period a date falls in, counted from the activity's creation.
+    ///
+    /// Day- and week-based cadences are anchored to the creation day, because
+    /// "every 3 days" has no natural calendar alignment. Month-based ones are
+    /// calendar-aligned instead — asking "did I do it in August" is how people
+    /// actually think about a monthly commitment, and it sidesteps months
+    /// having different lengths.
+    func periodIndex(for date: Date, cadence: Cadence, anchor: Date) -> Int {
+        switch cadence.unit {
+        case .day, .week:
+            let span = cadence.lengthInDays ?? 1
+            return Self.floorDiv(daysBetween(day(for: anchor), day(for: date)), span)
+        case .month:
+            let from = monthStart(for: anchor)
+            let to = monthStart(for: date)
+            let months = calendar.dateComponents([.month], from: from, to: to).month ?? 0
+            return Self.floorDiv(months, cadence.count)
+        }
+    }
+
+    func periodStart(index: Int, cadence: Cadence, anchor: Date) -> Date {
+        switch cadence.unit {
+        case .day, .week:
+            let span = cadence.lengthInDays ?? 1
+            return offsetting(day(for: anchor), by: index * span)
+        case .month:
+            let from = monthStart(for: anchor)
+            return calendar.date(byAdding: .month, value: index * cadence.count, to: from) ?? from
+        }
+    }
+
+    /// Exclusive.
+    func periodEnd(index: Int, cadence: Cadence, anchor: Date) -> Date {
+        periodStart(index: index + 1, cadence: cadence, anchor: anchor)
+    }
+
+    func currentPeriodIndex(cadence: Cadence, anchor: Date) -> Int {
+        periodIndex(for: .now, cadence: cadence, anchor: anchor)
+    }
+
+    private func monthStart(for date: Date) -> Date {
+        let shifted = day(for: date)
+        let components = calendar.dateComponents([.year, .month], from: shifted)
+        return calendar.date(from: components) ?? shifted
+    }
+
+    /// Swift's `/` truncates toward zero, which puts dates before the anchor in
+    /// the wrong period. Periods must tile the line evenly in both directions.
+    static func floorDiv(_ a: Int, _ b: Int) -> Int {
+        let quotient = a / b
+        let remainder = a % b
+        return (remainder != 0 && ((remainder < 0) != (b < 0))) ? quotient - 1 : quotient
+    }
+
+    /// "Today", "Aug 12 – 18", "August", "Aug – Oct 2026"
+    func periodLabel(index: Int, cadence: Cadence, anchor: Date) -> String {
+        let start = periodStart(index: index, cadence: cadence, anchor: anchor)
+        let end = offsetting(periodEnd(index: index, cadence: cadence, anchor: anchor), by: -1)
+
+        if cadence.isDaily { return label(for: start) }
+
+        if cadence.unit == .month {
+            if cadence.count == 1 {
+                return start.formatted(.dateTime.month(.wide).year())
+            }
+            return start.formatted(.dateTime.month(.abbreviated))
+                + " – " + end.formatted(.dateTime.month(.abbreviated).year())
+        }
+
+        return start.formatted(.dateTime.month(.abbreviated).day())
+            + " – " + end.formatted(.dateTime.month(.abbreviated).day())
     }
 }

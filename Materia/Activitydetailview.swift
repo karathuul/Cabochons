@@ -7,7 +7,7 @@ struct ActivityDetailView: View {
     let activityID: Activity.ID
 
     @State private var pulse = 0
-    @State private var inspecting: DaySummary?
+    @State private var inspecting: PeriodSummary?
     @State private var editing = false
 
     private var activity: Activity? { store.activity(activityID) }
@@ -36,10 +36,14 @@ struct ActivityDetailView: View {
                 ActivityEditor(mode: .edit(activity)) { store.update($0) }
             }
         }
-        .sheet(item: $inspecting) { summary in
-            DayEntriesSheet(
-                day: summary.day,
-                capacity: summary.target,
+        .sheet(item: $inspecting) { period in
+            PeriodEntriesSheet(
+                period: period,
+                title: store.calc.periodLabel(
+                    index: period.index,
+                    cadence: store.activity(activityID)?.cadence ?? .daily,
+                    anchor: store.activity(activityID)?.createdAt ?? .now
+                ),
                 activityID: activityID
             )
         }
@@ -65,22 +69,31 @@ struct ActivityDetailView: View {
         .sensoryFeedback(.impact(weight: .medium), trigger: pulse)
     }
 
-    // MARK: Today's sockets
+    // MARK: This period's sockets
 
     private func slotPanel(activity: Activity, stats: ActivityStats) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let current = stats.current
+
+        return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Today")
-                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(periodTitle(stats))
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                    if !stats.cadence.isDaily {
+                        Text("\(stats.target) every \(stats.cadence.phrase)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 Spacer()
 
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(stats.today)")
+                    Text("\(current?.count ?? 0)")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(activity.color.core)
-                    Text("/ \(activity.dailyTarget)")
+                    Text("/ \(stats.target)")
                         .font(.system(size: 18, weight: .medium, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
@@ -88,25 +101,37 @@ struct ActivityDetailView: View {
             }
 
             SlotRail(
-                count: stats.today,
+                count: current?.count ?? 0,
                 color: activity.color,
-                capacity: activity.dailyTarget,
+                capacity: stats.target,
                 size: 34
             )
-            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: stats.today)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: current?.count ?? 0)
 
-            if stats.today >= activity.dailyTarget, activity.dailyTarget > 0 {
+            if let current, current.isMet {
                 Label(
-                    stats.today > activity.dailyTarget
-                        ? "Mastered — \(stats.today - activity.dailyTarget) over"
-                        : "Mastered",
+                    current.overflow > 0 ? "Mastered — \(current.overflow) over" : "Mastered",
                     systemImage: "star.fill"
                 )
                 .font(.system(.caption, design: .rounded, weight: .semibold))
                 .foregroundStyle(Chrome.gold)
+            } else if let current, !stats.cadence.isDaily {
+                let days = max(0, store.calc.daysBetween(store.calc.today, current.end))
+                Text("\(current.remaining) to go · \(days) \(days == 1 ? "day" : "days") left")
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(.secondary)
             }
         }
         .panel()
+    }
+
+    private func periodTitle(_ stats: ActivityStats) -> String {
+        guard let current = stats.current else { return "This period" }
+        return store.calc.periodLabel(
+            index: current.index,
+            cadence: stats.cadence,
+            anchor: activity?.createdAt ?? .now
+        )
     }
 
     // MARK: The button
@@ -143,8 +168,9 @@ struct ActivityDetailView: View {
             VStack(alignment: .leading, spacing: 10) {
                 StreakBadge(
                     streak: stats.currentStreak,
-                    today: stats.today,
-                    accent: activity.color.core
+                    today: stats.currentCount,
+                    accent: activity.color.core,
+                    unit: stats.cadence.unit.label(count: 2)
                 )
 
                 Button {
@@ -154,7 +180,7 @@ struct ActivityDetailView: View {
                         .font(.system(.callout, design: .rounded))
                 }
                 .buttonStyle(.bordered)
-                .disabled(stats.today == 0)
+                .disabled(store.todayCount(for: activity) == 0)
             }
 
             Spacer(minLength: 0)
@@ -170,12 +196,13 @@ struct ActivityDetailView: View {
             alignment: .leading,
             spacing: 14
         ) {
+            let unit = stats.cadence.unit.label(count: 2)
             StatTile(label: "Total", value: "\(stats.total)")
-            StatTile(label: "Streak", value: "\(stats.currentStreak)", unit: "days")
-            StatTile(label: "Longest", value: "\(stats.longestStreak)", unit: "days")
-            StatTile(label: "Days logged", value: "\(stats.daysLogged)")
-            StatTile(label: "Mastered", value: "\(stats.masteredDays)", unit: "days")
-            StatTile(label: "Per day", value: String(format: "%.1f", stats.average))
+            StatTile(label: "Streak", value: "\(stats.currentStreak)", unit: unit)
+            StatTile(label: "Longest", value: "\(stats.longestStreak)", unit: unit)
+            StatTile(label: "Logged", value: "\(stats.periodsLogged)", unit: unit)
+            StatTile(label: "Mastered", value: "\(stats.periodsMet)", unit: unit)
+            StatTile(label: "Average", value: String(format: "%.1f", stats.average))
         }
         .panel()
     }
@@ -184,25 +211,33 @@ struct ActivityDetailView: View {
 
     private func history(activity: Activity, stats: ActivityStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("By day")
+            Text(stats.cadence.isDaily ? "By day" : "By \(stats.cadence.phrase)")
                 .font(.system(.headline, design: .rounded, weight: .semibold))
 
-            if stats.days.isEmpty {
+            if stats.periods.isEmpty {
                 Text("Nothing logged yet. Press the orb.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 6)
             } else {
                 LazyVStack(spacing: 0) {
-                    ForEach(stats.days) { summary in
+                    ForEach(stats.periods) { period in
                         Button {
-                            inspecting = summary
+                            inspecting = period
                         } label: {
-                            DayRow(summary: summary, color: activity.color, calc: store.calc)
+                            PeriodRow(
+                                period: period,
+                                label: store.calc.periodLabel(
+                                    index: period.index,
+                                    cadence: stats.cadence,
+                                    anchor: activity.createdAt
+                                ),
+                                color: activity.color
+                            )
                         }
                         .buttonStyle(.plain)
 
-                        if summary.id != stats.days.last?.id {
+                        if period.id != stats.periods.last?.id {
                             Divider().overlay(Chrome.steel.opacity(0.25))
                         }
                     }
@@ -213,20 +248,20 @@ struct ActivityDetailView: View {
     }
 }
 
-// MARK: - Day row
+// MARK: - Period row
 
-private struct DayRow: View {
-    let summary: DaySummary
+private struct PeriodRow: View {
+    let period: PeriodSummary
+    let label: String
     let color: MateriaColor
-    let calc: DayCalculator
 
     var body: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(calc.label(for: summary.day))
+                    Text(label)
                         .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    if summary.isMastered {
+                    if period.isMet {
                         Image(systemName: "star.fill")
                             .font(.system(size: 9))
                             .foregroundStyle(Chrome.gold)
@@ -234,9 +269,9 @@ private struct DayRow: View {
                 }
 
                 SlotRail(
-                    count: summary.count,
+                    count: period.count,
                     color: color,
-                    capacity: summary.target,
+                    capacity: period.target,
                     size: 14,
                     maxSlots: 20
                 )
@@ -244,10 +279,10 @@ private struct DayRow: View {
 
             Spacer(minLength: 8)
 
-            Text("\(summary.count)")
+            Text("\(period.count)")
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(summary.isMastered ? Chrome.gold : .primary)
+                .foregroundStyle(period.isMet ? Chrome.gold : .primary)
 
             Image(systemName: "chevron.right")
                 .font(.caption2)

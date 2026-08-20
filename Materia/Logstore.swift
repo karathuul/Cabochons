@@ -43,10 +43,10 @@ final class LogStore {
         Stats.combine(activities: activities, calc: calc)
     }
 
-    /// Every socket the day has, summed across activities. The day's loadout is
-    /// the union of what each activity contributes.
+    /// Sockets the day has, from daily activities only. A monthly activity owes
+    /// nothing in particular today, so it contributes none.
     var dailyCapacity: Int {
-        activities.reduce(0) { $0 + $1.dailyTarget }
+        activities.filter(\.cadence.isDaily).reduce(0) { $0 + $1.target }
     }
 
     func todayCount(for activity: Activity) -> Int {
@@ -54,6 +54,16 @@ final class LogStore {
         return activity.jewels.reduce(into: 0) { total, jewel in
             if calc.day(for: jewel.timestamp) == today { total += 1 }
         }
+    }
+
+    /// Count within the activity's own current period, which is what its target
+    /// is measured against.
+    func periodCount(for activity: Activity) -> Int {
+        Stats.progress(for: activity, calc: calc).count
+    }
+
+    func progress(for activity: Activity) -> PeriodProgress {
+        Stats.progress(for: activity, calc: calc)
     }
 
     /// Every jewel tagged with where it came from, chronological.
@@ -79,6 +89,17 @@ final class LogStore {
             .filter {
                 calc.day(for: $0.timestamp) == day
                     && (activityID == nil || $0.activityID == activityID)
+            }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
+    /// Newest first, for one activity within one turn of its cadence.
+    func entries(in period: PeriodSummary, activityID: UUID) -> [LoggedJewel] {
+        allEntries()
+            .filter {
+                $0.activityID == activityID
+                    && $0.timestamp >= period.start
+                    && $0.timestamp < period.end
             }
             .sorted { $0.timestamp > $1.timestamp }
     }

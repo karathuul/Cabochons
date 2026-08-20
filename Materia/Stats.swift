@@ -14,29 +14,38 @@ struct LoggedJewel: Identifiable, Hashable {
 
 // MARK: - Per-activity
 
-struct DaySummary: Identifiable, Hashable {
-    let day: Date
+/// One turn of an activity's cadence.
+struct PeriodSummary: Identifiable, Hashable {
+    let index: Int
+    let start: Date
+    /// Exclusive.
+    let end: Date
     let count: Int
     let target: Int
 
-    var id: Date { day }
-    var isMastered: Bool { target > 0 && count >= target }
+    var id: Int { index }
+    var isMet: Bool { target > 0 && count >= target }
     var overflow: Int { max(0, count - target) }
+    var remaining: Int { max(0, target - count) }
 }
 
 struct ActivityStats {
     var total: Int = 0
-    var today: Int = 0
+    var target: Int = 1
+    var cadence: Cadence = .daily
     var currentStreak: Int = 0
     var longestStreak: Int = 0
-    var daysLogged: Int = 0
-    var masteredDays: Int = 0
-    var best: DaySummary?
-    /// Newest first.
-    var days: [DaySummary] = []
+    var periodsLogged: Int = 0
+    var periodsMet: Int = 0
+    var best: PeriodSummary?
+    var current: PeriodSummary?
+    /// Newest first. Includes the current period even when it's empty.
+    var periods: [PeriodSummary] = []
+
+    var currentCount: Int { current?.count ?? 0 }
 
     var average: Double {
-        daysLogged == 0 ? 0 : Double(total) / Double(daysLogged)
+        periodsLogged == 0 ? 0 : Double(total) / Double(periodsLogged)
     }
 }
 
@@ -56,7 +65,7 @@ struct CombinedDay: Identifiable, Hashable {
     let day: Date
     /// Chronological, earliest first.
     let entries: [LoggedJewel]
-    /// Sum of every activity's daily target.
+    /// Only daily-cadence activities contribute sockets — see `Stats.combine`.
     let capacity: Int
     let tallies: [ActivityTally]
 
@@ -67,8 +76,26 @@ struct CombinedDay: Identifiable, Hashable {
     var fills: [MateriaColor] { entries.map(\.color) }
 }
 
+/// Where one activity stands in its current period. This is what carries the
+/// weight for non-daily activities, which a day rail can't describe.
+struct PeriodProgress: Identifiable, Hashable {
+    let activityID: UUID
+    let name: String
+    let color: MateriaColor
+    let count: Int
+    let target: Int
+    let cadence: Cadence
+    let periodLabel: String
+    let daysRemaining: Int
+
+    var id: UUID { activityID }
+    var isMet: Bool { target > 0 && count >= target }
+    var remaining: Int { max(0, target - count) }
+}
+
 struct CombinedStats {
     var total: Int = 0
+    /// Sum of targets for daily activities only.
     var capacity: Int = 0
     var currentStreak: Int = 0
     var longestStreak: Int = 0
@@ -77,6 +104,7 @@ struct CombinedStats {
     /// Newest first.
     var days: [CombinedDay] = []
     var today: CombinedDay?
+    var progress: [PeriodProgress] = []
 
     var todayCount: Int { today?.count ?? 0 }
 
@@ -92,32 +120,57 @@ enum Stats {
     // MARK: Single activity
 
     static func compute(for activity: Activity, calc: DayCalculator) -> ActivityStats {
-        var counts: [Date: Int] = [:]
+        let cadence = activity.cadence
+        let anchor = activity.createdAt
+
+        var counts: [Int: Int] = [:]
         for jewel in activity.jewels {
-            counts[calc.day(for: jewel.timestamp), default: 0] += 1
+            let index = calc.periodIndex(for: jewel.timestamp, cadence: cadence, anchor: anchor)
+            counts[index, default: 0] += 1
         }
 
-        let target = activity.dailyTarget
-        let summaries = counts.keys.sorted(by: >).map {
-            DaySummary(day: $0, count: counts[$0] ?? 0, target: target)
+        let currentIndex = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
+
+        func summary(_ index: Int) -> PeriodSummary {
+            PeriodSummary(
+                index: index,
+                start: calc.periodStart(index: index, cadence: cadence, anchor: anchor),
+                end: calc.periodEnd(index: index, cadence: cadence, anchor: anchor),
+                count: counts[index] ?? 0,
+                target: activity.target
+            )
         }
+
+        // The current period always shows, even empty — it's the one you can
+        // still act on.
+        var indices = Set(counts.keys)
+        indices.insert(currentIndex)
+        let summaries = indices.sorted(by: >).map(summary)
+        let met = Set(summaries.filter(\.isMet).map(\.index))
 
         var stats = ActivityStats()
         stats.total = activity.jewels.count
-        stats.today = counts[calc.today] ?? 0
-        stats.daysLogged = counts.count
-        stats.masteredDays = summaries.filter(\.isMastered).count
+        stats.target = activity.target
+        stats.cadence = cadence
+        stats.periodsLogged = counts.count
+        stats.periodsMet = met.count
         stats.best = summaries.max { $0.count < $1.count }
-        stats.days = summaries
-        stats.currentStreak = currentStreak(days: Set(counts.keys), calc: calc)
-        stats.longestStreak = longestStreak(days: Set(counts.keys), calc: calc)
+        stats.current = summary(currentIndex)
+        stats.periods = summaries
+        stats.currentStreak = currentStreak(met: met, current: currentIndex)
+        stats.longestStreak = longestStreak(met: met)
         return stats
     }
 
     // MARK: All activities on one rail
 
     static func combine(activities: [Activity], calc: DayCalculator) -> CombinedStats {
-        let capacity = activities.reduce(0) { $0 + $1.dailyTarget }
+        // Only daily activities can define a day's sockets. A monthly activity
+        // owes you nothing in particular today, so folding its target into a
+        // daily capacity would invent a debt that doesn't exist.
+        let capacity = activities
+            .filter(\.cadence.isDaily)
+            .reduce(0) { $0 + $1.target }
 
         var byDay: [Date: [LoggedJewel]] = [:]
         for activity in activities {
@@ -135,7 +188,9 @@ enum Stats {
 
         // Preserve sidebar order in the tallies rather than sorting by count,
         // so the legend colours stay in the same place day to day.
-        let order = Dictionary(uniqueKeysWithValues: activities.enumerated().map { ($0.element.id, $0.offset) })
+        let order = Dictionary(
+            uniqueKeysWithValues: activities.enumerated().map { ($0.element.id, $0.offset) }
+        )
 
         let days: [CombinedDay] = byDay.keys.sorted(by: >).map { day in
             let entries = (byDay[day] ?? []).sorted { $0.timestamp < $1.timestamp }
@@ -166,14 +221,74 @@ enum Stats {
         stats.today = days.first { $0.day == calc.today }
         stats.currentStreak = currentStreak(days: Set(byDay.keys), calc: calc)
         stats.longestStreak = longestStreak(days: Set(byDay.keys), calc: calc)
+        stats.progress = activities.map { progress(for: $0, calc: calc) }
         return stats
+    }
+
+    static func progress(for activity: Activity, calc: DayCalculator) -> PeriodProgress {
+        let cadence = activity.cadence
+        let anchor = activity.createdAt
+        let index = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
+
+        let count = activity.jewels.reduce(into: 0) { total, jewel in
+            if calc.periodIndex(for: jewel.timestamp, cadence: cadence, anchor: anchor) == index {
+                total += 1
+            }
+        }
+
+        let end = calc.periodEnd(index: index, cadence: cadence, anchor: anchor)
+
+        return PeriodProgress(
+            activityID: activity.id,
+            name: activity.name,
+            color: activity.color,
+            count: count,
+            target: activity.target,
+            cadence: cadence,
+            periodLabel: calc.periodLabel(index: index, cadence: cadence, anchor: anchor),
+            daysRemaining: max(0, calc.daysBetween(calc.today, end))
+        )
     }
 
     // MARK: Streaks
 
-    /// Counts back from today. A day with no jewels yet doesn't break the
-    /// streak until it's over — so the count anchors at yesterday until you
-    /// log, rather than dropping to zero every midnight.
+    /// Consecutive periods in which the target was met.
+    ///
+    /// The current period is skipped rather than counted as a miss — it isn't
+    /// over yet. That's what stops a monthly streak from collapsing at midnight
+    /// on the 1st, and it's the same rule that used to keep a daily streak
+    /// alive until the day actually ended.
+    static func currentStreak(met: Set<Int>, current: Int) -> Int {
+        var cursor = current
+        if !met.contains(cursor) { cursor -= 1 }
+
+        var streak = 0
+        while met.contains(cursor) {
+            streak += 1
+            cursor -= 1
+        }
+        return streak
+    }
+
+    static func longestStreak(met: Set<Int>) -> Int {
+        var longest = 0
+        var run = 0
+        var previous: Int?
+
+        for index in met.sorted() {
+            if let previous, index == previous + 1 {
+                run += 1
+            } else {
+                run = 1
+            }
+            longest = max(longest, run)
+            previous = index
+        }
+        return longest
+    }
+
+    // MARK: Day streaks, for the combined view
+
     static func currentStreak(days: Set<Date>, calc: DayCalculator) -> Int {
         var cursor = calc.today
         if !days.contains(cursor) {

@@ -147,12 +147,12 @@ private struct SidebarRow: View {
     let activity: Activity
 
     var body: some View {
-        let today = store.todayCount(for: activity)
+        let progress = store.progress(for: activity)
 
         HStack(spacing: 12) {
             ZStack {
                 MateriaSocket(size: 26)
-                if today > 0 {
+                if progress.count > 0 {
                     MateriaOrb(color: activity.color, size: 26, glow: 0.7)
                 }
             }
@@ -161,15 +161,16 @@ private struct SidebarRow: View {
                 Text(activity.name)
                     .font(.system(.body, design: .rounded, weight: .medium))
                     .lineLimit(1)
-                Text("\(today) of \(activity.dailyTarget) today")
+                Text("\(progress.count) of \(progress.target) this \(progress.cadence.phrase)")
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 4)
 
-            if today >= activity.dailyTarget, activity.dailyTarget > 0 {
+            if progress.isMet {
                 Image(systemName: "star.fill")
                     .font(.caption)
                     .foregroundStyle(Chrome.gold)

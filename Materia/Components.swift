@@ -106,59 +106,21 @@ struct MateriaSocket: View {
     }
 }
 
-// MARK: - Linked pair
-
-/// Two sockets joined by a connector bar. An odd capacity ends in a single
-/// unlinked socket, which is how FF7 equipment actually looks — don't pad it
-/// out to an even pair.
-struct LinkedPair: View {
-    let contents: [SlotContent]   // 1 or 2 entries
-    var size: CGFloat = 30
-
-    private var spacing: CGFloat { size * 0.62 }
-
-    var body: some View {
-        HStack(spacing: spacing) {
-            ForEach(Array(contents.enumerated()), id: \.offset) { _, content in
-                slot(content)
-            }
-        }
-        .background(alignment: .center) {
-            if contents.count > 1 {
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [Chrome.steel.opacity(0.75), Chrome.steelHi.opacity(0.35)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: spacing + size * 0.5, height: size * 0.17)
-                    .overlay(
-                        Capsule().stroke(Color.black.opacity(0.45), lineWidth: 0.5)
-                    )
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func slot(_ content: SlotContent) -> some View {
-        switch content {
-        case .empty:
-            MateriaSocket(size: size)
-        case .filled(let color, let overflow):
-            MateriaOrb(color: color, size: size, overflow: overflow)
-        }
-    }
-}
-
 // MARK: - Slot rail
 
-/// One day of sockets. `fills` is in the order the jewels were earned, so a
-/// combined day rail reads left to right as the day progressed and mixes
-/// colours from every activity. Anything past capacity extends the rail with
-/// gold-rimmed orbs rather than being hidden — over-delivering shouldn't look
-/// identical to hitting the number exactly.
+/// One period of sockets, laid out loose.
+///
+/// These used to be joined in pairs, echoing FF7's linked slots. The bar was
+/// dropped because it never varied: in the game a link meant the left materia
+/// modified the right one, and reading where links fell was how you judged a
+/// weapon. Here every pair was identical and the sockets hold identical taps,
+/// so the connector asserted a relationship that didn't exist.
+///
+/// `fills` is in the order the jewels were earned, so a combined day rail
+/// reads left to right as the day progressed and mixes colours from every
+/// activity. Anything past capacity extends the rail with gold-rimmed orbs
+/// rather than being hidden — over-delivering shouldn't look identical to
+/// hitting the number exactly.
 struct SlotRail: View {
     let fills: [MateriaColor]
     let capacity: Int
@@ -185,7 +147,8 @@ struct SlotRail: View {
     }
 
     private var slots: [SlotContent] {
-        let total = max(1, min(max(capacity, fills.count), maxSlots))
+        let total = min(max(capacity, fills.count), maxSlots)
+        guard total > 0 else { return [] }
         return (0..<total).map { index in
             index < fills.count
                 ? .filled(fills[index], overflow: index >= capacity)
@@ -194,13 +157,14 @@ struct SlotRail: View {
     }
 
     var body: some View {
-        let groups = stride(from: 0, to: slots.count, by: 2).map { start in
-            Array(slots[start..<min(start + 2, slots.count)])
-        }
-
-        FlowLayout(spacing: size * 0.44, lineSpacing: size * 0.40) {
-            ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-                LinkedPair(contents: group, size: size)
+        FlowLayout(spacing: size * 0.34, lineSpacing: size * 0.34) {
+            ForEach(Array(slots.enumerated()), id: \.offset) { _, content in
+                switch content {
+                case .empty:
+                    MateriaSocket(size: size)
+                case .filled(let color, let overflow):
+                    MateriaOrb(color: color, size: size, overflow: overflow)
+                }
             }
 
             if truncated > 0 {
@@ -347,6 +311,8 @@ struct StreakBadge: View {
     let streak: Int
     let today: Int
     let accent: Color
+    /// "days", "weeks", "months" — a streak counts periods, not days.
+    var unit: String = "days"
 
     var body: some View {
         let atRisk = Stats.streakAtRisk(currentStreak: streak, today: today)
@@ -369,7 +335,10 @@ struct StreakBadge: View {
 
     private func caption(atRisk: Bool) -> String {
         if streak == 0 { return "no streak" }
-        return atRisk ? "day streak — nothing today yet" : "day streak"
+        let singular = String(unit.dropLast())
+        return atRisk
+            ? "\(singular) streak — nothing yet"
+            : "\(singular) streak"
     }
 }
 
