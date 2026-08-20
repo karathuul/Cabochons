@@ -7,6 +7,7 @@ struct DayView: View {
 
     @State private var pulse = 0
     @State private var inspecting: CombinedDay?
+    @State private var noting: LoggedJewel?
 
     var body: some View {
         let stats = store.combined
@@ -35,6 +36,9 @@ struct DayView: View {
         }
         .sheet(item: $inspecting) { day in
             DayEntriesSheet(day: day.day, capacity: day.capacity)
+        }
+        .sheet(item: $noting) { entry in
+            NoteEditor(entry: entry)
         }
     }
 
@@ -103,10 +107,23 @@ struct DayView: View {
                         .font(.system(.headline, design: .rounded, weight: .semibold))
                     Spacer()
                     Button {
+                        noting = store.mostRecentToday
+                    } label: {
+                        Label("Note", systemImage: "square.and.pencil")
+                            .font(.system(.caption, design: .rounded))
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(stats.todayCount == 0)
+
+                    Button {
                         store.removeLastToday()
                     } label: {
                         Label("Undo", systemImage: "arrow.uturn.backward")
                             .font(.system(.caption, design: .rounded))
+                            .lineLimit(1)
+                            .fixedSize()
                     }
                     .buttonStyle(.bordered)
                     .disabled(stats.todayCount == 0)
@@ -119,6 +136,10 @@ struct DayView: View {
                         ActivityButton(activity: activity) {
                             store.slot(activity.id)
                             pulse += 1
+                        } logAndNote: {
+                            store.slot(activity.id)
+                            pulse += 1
+                            noting = store.mostRecentToday
                         }
                     }
                 }
@@ -232,8 +253,7 @@ private struct ProgressRow: View {
                 }
 
                 SlotRail(
-                    count: item.count,
-                    color: item.color,
+                    fills: item.fills,
                     capacity: item.target,
                     size: 13,
                     maxSlots: 20
@@ -268,6 +288,9 @@ private struct ActivityButton: View {
     @Environment(LogStore.self) private var store
     let activity: Activity
     let action: () -> Void
+    /// Long press: log it and open the note straight away, for when you already
+    /// know this one was worth writing about.
+    let logAndNote: () -> Void
 
     var body: some View {
         let progress = store.progress(for: activity)
@@ -306,7 +329,11 @@ private struct ActivityButton: View {
             .frame(width: 104)
         }
         .buttonStyle(OrbButtonStyle())
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45).onEnded { _ in logAndNote() }
+        )
         .accessibilityLabel("Slot a jewel for \(activity.name)")
+        .accessibilityHint("Long press to log with a note")
     }
 }
 

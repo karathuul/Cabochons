@@ -7,6 +7,15 @@ internal import SwiftUI
 struct Jewel: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var timestamp: Date
+    /// Optional. Synthesised decoding uses `decodeIfPresent` for Optionals, so
+    /// files written before notes existed load without migration.
+    var note: String? = nil
+
+    /// Whitespace-only notes don't count — otherwise an opened-and-abandoned
+    /// editor would flag the jewel forever.
+    var hasNote: Bool {
+        !(note ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 // MARK: - Cadence

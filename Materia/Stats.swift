@@ -10,6 +10,13 @@ struct LoggedJewel: Identifiable, Hashable {
     let activityID: UUID
     let activityName: String
     let color: MateriaColor
+    var note: String? = nil
+
+    var hasNote: Bool {
+        !(note ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var rail: RailJewel { RailJewel(color, hasNote: hasNote) }
 }
 
 // MARK: - Per-activity
@@ -22,6 +29,8 @@ struct PeriodSummary: Identifiable, Hashable {
     let end: Date
     let count: Int
     let target: Int
+    /// Chronological. Carried here so history rows don't each re-query.
+    var fills: [RailJewel] = []
 
     var id: Int { index }
     var isMet: Bool { target > 0 && count >= target }
@@ -73,7 +82,7 @@ struct CombinedDay: Identifiable, Hashable {
     var count: Int { entries.count }
     var isMastered: Bool { capacity > 0 && count >= capacity }
     var overflow: Int { max(0, count - capacity) }
-    var fills: [MateriaColor] { entries.map(\.color) }
+    var fills: [RailJewel] { entries.map(\.rail) }
 }
 
 /// Where one activity stands in its current period. This is what carries the
@@ -87,6 +96,8 @@ struct PeriodProgress: Identifiable, Hashable {
     let cadence: Cadence
     let periodLabel: String
     let daysRemaining: Int
+    /// Chronological, so this rail shows note tags like every other one.
+    var fills: [RailJewel] = []
 
     var id: UUID { activityID }
     var isMet: Bool { target > 0 && count >= target }
@@ -123,21 +134,24 @@ enum Stats {
         let cadence = activity.cadence
         let anchor = activity.createdAt
 
-        var counts: [Int: Int] = [:]
+        var byPeriod: [Int: [Jewel]] = [:]
         for jewel in activity.jewels {
             let index = calc.periodIndex(for: jewel.timestamp, cadence: cadence, anchor: anchor)
-            counts[index, default: 0] += 1
+            byPeriod[index, default: []].append(jewel)
         }
+        let counts = byPeriod.mapValues(\.count)
 
         let currentIndex = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
 
         func summary(_ index: Int) -> PeriodSummary {
-            PeriodSummary(
+            let jewels = (byPeriod[index] ?? []).sorted { $0.timestamp < $1.timestamp }
+            return PeriodSummary(
                 index: index,
                 start: calc.periodStart(index: index, cadence: cadence, anchor: anchor),
                 end: calc.periodEnd(index: index, cadence: cadence, anchor: anchor),
-                count: counts[index] ?? 0,
-                target: activity.target
+                count: jewels.count,
+                target: activity.target,
+                fills: jewels.map { RailJewel(activity.color, hasNote: $0.hasNote) }
             )
         }
 
@@ -181,7 +195,8 @@ enum Stats {
                     timestamp: jewel.timestamp,
                     activityID: activity.id,
                     activityName: activity.name,
-                    color: activity.color
+                    color: activity.color,
+                    note: jewel.note
                 )
                 byDay[calc.day(for: jewel.timestamp), default: []].append(entry)
             }
@@ -235,11 +250,9 @@ enum Stats {
         let anchor = activity.createdAt
         let index = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
 
-        let count = activity.jewels.reduce(into: 0) { total, jewel in
-            if calc.periodIndex(for: jewel.timestamp, cadence: cadence, anchor: anchor) == index {
-                total += 1
-            }
-        }
+        let inPeriod = activity.jewels
+            .filter { calc.periodIndex(for: $0.timestamp, cadence: cadence, anchor: anchor) == index }
+            .sorted { $0.timestamp < $1.timestamp }
 
         let end = calc.periodEnd(index: index, cadence: cadence, anchor: anchor)
 
@@ -247,11 +260,12 @@ enum Stats {
             activityID: activity.id,
             name: activity.name,
             color: activity.color,
-            count: count,
+            count: inPeriod.count,
             target: activity.target,
             cadence: cadence,
             periodLabel: calc.periodLabel(index: index, cadence: cadence, anchor: anchor),
-            daysRemaining: max(0, calc.daysBetween(calc.today, end))
+            daysRemaining: max(0, calc.daysBetween(calc.today, end)),
+            fills: inPeriod.map { RailJewel(activity.color, hasNote: $0.hasNote) }
         )
     }
 

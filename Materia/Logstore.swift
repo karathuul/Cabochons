@@ -89,7 +89,8 @@ final class LogStore {
                         timestamp: $0.timestamp,
                         activityID: activity.id,
                         activityName: activity.name,
-                        color: activity.color
+                        color: activity.color,
+                        note: $0.note
                     )
                 }
             }
@@ -155,11 +156,28 @@ final class LogStore {
 
     /// The whole point of the app.
     @discardableResult
-    func slot(_ id: Activity.ID, at date: Date = .now) -> Bool {
+    func slot(_ id: Activity.ID, at date: Date = .now, note: String? = nil) -> Bool {
         guard let index = activities.firstIndex(where: { $0.id == id }) else { return false }
-        activities[index].jewels.append(Jewel(timestamp: date))
+        activities[index].jewels.append(Jewel(timestamp: date, note: note))
         save()
         return true
+    }
+
+    /// Blank or whitespace-only clears the note rather than storing an empty
+    /// string, so `hasNote` and the tag can't disagree.
+    func setNote(_ text: String, for jewel: Jewel.ID, in id: Activity.ID) {
+        guard let activityIndex = activities.firstIndex(where: { $0.id == id }),
+              let jewelIndex = activities[activityIndex].jewels.firstIndex(where: { $0.id == jewel })
+        else { return }
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        activities[activityIndex].jewels[jewelIndex].note = trimmed.isEmpty ? nil : trimmed
+        save()
+    }
+
+    /// The jewel a "add a note" action should attach to.
+    var mostRecentToday: LoggedJewel? {
+        entries(on: calc.today).first
     }
 
     func remove(jewel: Jewel.ID, from id: Activity.ID) {
@@ -226,11 +244,12 @@ final class LogStore {
 
     /// Chronological across all activities, so it matches the day rail's order.
     func exportCSV() -> String {
-        var lines = ["timestamp,activity,colour"]
+        var lines = ["timestamp,activity,colour,note"]
         let formatter = ISO8601DateFormatter()
         for entry in allEntries() {
             let name = entry.activityName.replacingOccurrences(of: "\"", with: "\"\"")
-            lines.append("\(formatter.string(from: entry.timestamp)),\"\(name)\",\(entry.color.hex)")
+            let note = (entry.note ?? "").replacingOccurrences(of: "\"", with: "\"\"")
+            lines.append("\(formatter.string(from: entry.timestamp)),\"\(name)\",\(entry.color.hex),\"\(note)\"")
         }
         return lines.joined(separator: "\n")
     }

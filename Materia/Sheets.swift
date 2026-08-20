@@ -273,6 +273,7 @@ struct PeriodEntriesSheet: View {
 
 private struct EntryList: View {
     @Environment(LogStore.self) private var store
+    @State private var editing: LoggedJewel?
 
     let title: String
     let subtitle: String
@@ -281,7 +282,7 @@ private struct EntryList: View {
     let dismiss: () -> Void
 
     var body: some View {
-        let fills = entries.reversed().map(\.color)
+        let fills = entries.reversed().map(\.rail)
         let mixed = Set(entries.map(\.activityID)).count > 1
 
         VStack(alignment: .leading, spacing: 16) {
@@ -304,26 +305,53 @@ private struct EntryList: View {
 
             List {
                 ForEach(entries) { entry in
-                    HStack(spacing: 12) {
-                        MateriaOrb(color: entry.color, size: 18, glow: 0.6)
+                    Button {
+                        editing = entry
+                    } label: {
+                        HStack(alignment: .top, spacing: 12) {
+                            MateriaOrb(
+                                color: entry.color,
+                                size: 18,
+                                hasNote: entry.hasNote,
+                                glow: 0.6
+                            )
+                            .padding(.top, 1)
 
-                        Text(entry.timestamp.formatted(date: .omitted, time: .shortened))
-                            .font(.system(.body, design: .rounded))
-                            .monospacedDigit()
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack(spacing: 8) {
+                                    Text(entry.timestamp.formatted(date: .omitted, time: .shortened))
+                                        .font(.system(.body, design: .rounded))
+                                        .monospacedDigit()
 
-                        if mixed {
-                            Text(entry.activityName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                                    if mixed {
+                                        Text(entry.activityName)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+
+                                    Text(entry.timestamp.formatted(.dateTime.month(.abbreviated).day()))
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                }
+
+                                if let note = entry.note, entry.hasNote {
+                                    Text(note)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                } else {
+                                    Text("Add a note")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+
+                            Spacer(minLength: 0)
                         }
-
-                        Text(entry.timestamp.formatted(.dateTime.month(.abbreviated).day()))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-
-                        Spacer()
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .contextMenu {
                         Button("Delete", role: .destructive) {
                             store.remove(jewel: entry.id, from: entry.activityID)
@@ -346,5 +374,93 @@ private struct EntryList: View {
         #if os(macOS)
         .frame(width: 400, height: 480)
         #endif
+        .sheet(item: $editing) { entry in
+            NoteEditor(entry: entry)
+        }
+    }
+}
+
+// MARK: - Note editor
+
+/// Deliberately not in the tap path. One-tap logging is the point of the app,
+/// so a note is attached after the fact rather than gating the press behind a
+/// keyboard.
+struct NoteEditor: View {
+    @Environment(LogStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    let entry: LoggedJewel
+    @State private var text: String
+    @FocusState private var focused: Bool
+
+    init(entry: LoggedJewel) {
+        self.entry = entry
+        _text = State(initialValue: entry.note ?? "")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                MateriaOrb(color: entry.color, size: 30, hasNote: entry.hasNote)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.activityName)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                    Text(entry.timestamp.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+
+            TextEditor(text: $text)
+                .font(.system(.body, design: .rounded))
+                .scrollContentBackground(.hidden)
+                .padding(10)
+                .background {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Chrome.socketVoid.opacity(0.6))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(Chrome.steel.opacity(0.4), lineWidth: 1)
+                        }
+                }
+                .frame(minHeight: 140)
+                .focused($focused)
+
+            Text("Anything worth remembering about this one. Jewels with a note get a tag.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                if entry.hasNote {
+                    Button("Remove note", role: .destructive) {
+                        store.setNote("", for: entry.id, in: entry.activityID)
+                        dismiss()
+                    }
+                }
+
+                Spacer()
+
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+
+                Button("Save") {
+                    store.setNote(text, for: entry.id, in: entry.activityID)
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Chrome.panel)
+        #if os(macOS)
+        .frame(width: 420, height: 380)
+        #endif
+        .onAppear { focused = true }
     }
 }

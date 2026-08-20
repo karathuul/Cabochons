@@ -8,6 +8,7 @@ struct ActivityDetailView: View {
 
     @State private var pulse = 0
     @State private var inspecting: PeriodSummary?
+    @State private var noting: LoggedJewel?
     @State private var editing = false
 
     private var activity: Activity? { store.activity(activityID) }
@@ -50,6 +51,9 @@ struct ActivityDetailView: View {
             if let activity {
                 ActivityEditor(mode: .edit(activity)) { store.update($0) }
             }
+        }
+        .sheet(item: $noting) { entry in
+            NoteEditor(entry: entry)
         }
         .sheet(item: $inspecting) { period in
             PeriodEntriesSheet(
@@ -97,7 +101,7 @@ struct ActivityDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Hidden")
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                Text("\(activity.jewels.count) jewels have been archived for this activity.")
+                Text("All \(activity.jewels.count) jewels are kept and still show in past days. It just isn't asking for anything.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -145,12 +149,11 @@ struct ActivityDetailView: View {
             }
 
             SlotRail(
-                count: current?.count ?? 0,
-                color: activity.color,
+                fills: current?.fills ?? [],
                 capacity: stats.target,
                 size: 34
             )
-            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: current?.count ?? 0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: current?.fills ?? [])
 
             if let current, current.isMet {
                 Label(
@@ -207,7 +210,15 @@ struct ActivityDetailView: View {
                 }
             }
             .buttonStyle(OrbButtonStyle())
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                    store.slot(activity.id)
+                    pulse += 1
+                    noting = store.entries(on: store.calc.today, activityID: activity.id).first
+                }
+            )
             .accessibilityLabel("Slot a jewel for \(activity.name)")
+            .accessibilityHint("Long press to log with a note")
 
             VStack(alignment: .leading, spacing: 10) {
                 StreakBadge(
@@ -216,15 +227,35 @@ struct ActivityDetailView: View {
                     accent: activity.color.core,
                     unit: stats.cadence.unit.label(count: 2)
                 )
+                .fixedSize(horizontal: false, vertical: true)
 
-                Button {
-                    store.removeLastToday(activity.id)
-                } label: {
-                    Label("Remove last", systemImage: "arrow.uturn.backward")
-                        .font(.system(.callout, design: .rounded))
+                // Stacked, not side by side: the orb is a fixed 152pt, so on a
+                // phone the remaining column is too narrow for two bordered
+                // buttons and SwiftUI compresses them until the labels wrap one
+                // character per line.
+                VStack(alignment: .leading, spacing: 8) {
+                    Button {
+                        noting = store.entries(on: store.calc.today, activityID: activity.id).first
+                    } label: {
+                        Label("Note", systemImage: "square.and.pencil")
+                            .font(.system(.callout, design: .rounded))
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(store.todayCount(for: activity) == 0)
+
+                    Button {
+                        store.removeLastToday(activity.id)
+                    } label: {
+                        Label("Undo", systemImage: "arrow.uturn.backward")
+                            .font(.system(.callout, design: .rounded))
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(store.todayCount(for: activity) == 0)
                 }
-                .buttonStyle(.bordered)
-                .disabled(store.todayCount(for: activity) == 0)
             }
 
             Spacer(minLength: 0)
@@ -313,8 +344,7 @@ private struct PeriodRow: View {
                 }
 
                 SlotRail(
-                    count: period.count,
-                    color: color,
+                    fills: period.fills,
                     capacity: period.target,
                     size: 14,
                     maxSlots: 20

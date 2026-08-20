@@ -2,9 +2,21 @@ internal import SwiftUI
 
 // MARK: - What sits in one socket
 
+/// One filled socket's worth of information. The rail needs more than a colour
+/// now that a jewel can carry a note.
+struct RailJewel: Hashable {
+    var color: MateriaColor
+    var hasNote: Bool = false
+
+    init(_ color: MateriaColor, hasNote: Bool = false) {
+        self.color = color
+        self.hasNote = hasNote
+    }
+}
+
 enum SlotContent: Hashable {
     case empty
-    case filled(MateriaColor, overflow: Bool)
+    case filled(RailJewel, overflow: Bool)
 }
 
 // MARK: - The orb
@@ -14,6 +26,8 @@ struct MateriaOrb: View {
     var size: CGFloat = 30
     /// Jewels past the day's capacity get a gold rim and a star.
     var overflow: Bool = false
+    /// Something worth writing about happened.
+    var hasNote: Bool = false
     var glow: CGFloat = 1
 
     var body: some View {
@@ -61,6 +75,10 @@ struct MateriaOrb: View {
                     .shadow(color: .black.opacity(0.6), radius: 1)
                     .offset(y: size * 0.22)
             }
+
+            if hasNote {
+                NoteGlint(size: size)
+            }
         }
         .compositingGroup()
         .frame(width: size, height: size)
@@ -106,37 +124,102 @@ struct MateriaSocket: View {
     }
 }
 
+// MARK: - Note glint
+
+/// A four-point lens flare where the sphere catches the light. Materia in FF7
+/// sparkles; a jewel worth writing about sparkles harder.
+///
+/// Sits on the existing specular highlight (top-left), so it reads as the
+/// highlight flaring rather than as hardware added to the gem. Clear of the
+/// bottom-centre overflow star. Drawn inside the orb's frame (rays overhang by
+/// ~3% of size, absorbed by rail spacing), so annotated and plain orbs measure
+/// the same and alignment is unaffected.
+struct GlintShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let r = min(rect.width, rect.height) / 2
+        let waist = r * 0.18
+
+        var path = Path()
+        path.move(to: CGPoint(x: c.x, y: c.y - r))
+        path.addQuadCurve(
+            to: CGPoint(x: c.x + r, y: c.y),
+            control: CGPoint(x: c.x + waist, y: c.y - waist)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: c.x, y: c.y + r),
+            control: CGPoint(x: c.x + waist, y: c.y + waist)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: c.x - r, y: c.y),
+            control: CGPoint(x: c.x - waist, y: c.y + waist)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: c.x, y: c.y - r),
+            control: CGPoint(x: c.x - waist, y: c.y - waist)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct NoteGlint: View {
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            // Soft under-flare.
+            GlintShape()
+                .fill(.white.opacity(0.30))
+                .frame(width: size * 0.92, height: size * 0.92)
+
+            // The glint itself. The faint shadow buys separation on very light
+            // gems, where white-on-white would otherwise vanish.
+            GlintShape()
+                .fill(.white.opacity(0.95))
+                .frame(width: size * 0.62, height: size * 0.62)
+                .shadow(color: .black.opacity(0.35), radius: max(0.5, size * 0.02))
+        }
+        .rotationEffect(.degrees(-15))
+        .offset(x: -size * 0.14, y: -size * 0.22)
+        .overlay {
+            // Secondary reflection, lens-flare style. Only at button scale —
+            // it's noise at rail size.
+            if size >= 24 {
+                Circle()
+                    .fill(.white.opacity(0.5))
+                    .frame(width: size * 0.10, height: size * 0.10)
+                    .offset(x: size * 0.32, y: size * 0.32)
+            }
+        }
+    }
+}
+
 // MARK: - Slot rail
 
 /// One period of sockets, laid out loose.
 ///
-/// These used to be joined in pairs, echoing FF7's linked slots. The bar was
-/// dropped because it never varied: in the game a link meant the left materia
-/// modified the right one, and reading where links fell was how you judged a
-/// weapon. Here every pair was identical and the sockets hold identical taps,
-/// so the connector asserted a relationship that didn't exist.
-///
-/// `fills` is in the order the jewels were earned, so a combined day rail
-/// reads left to right as the day progressed and mixes colours from every
-/// activity. Anything past capacity extends the rail with gold-rimmed orbs
-/// rather than being hidden — over-delivering shouldn't look identical to
-/// hitting the number exactly.
+/// `fills` is in the order the jewels were earned, so a combined day rail reads
+/// left to right as the day progressed and mixes colours from every activity.
+/// Anything past capacity extends the rail with gold-rimmed orbs rather than
+/// being hidden — over-delivering shouldn't look identical to hitting the
+/// number exactly.
 struct SlotRail: View {
-    let fills: [MateriaColor]
+    let fills: [RailJewel]
     let capacity: Int
     var size: CGFloat = 30
     var maxSlots: Int = 60
 
-    /// Convenience for a single-activity rail.
-    init(count: Int, color: MateriaColor, capacity: Int, size: CGFloat = 30, maxSlots: Int = 60) {
-        self.fills = Array(repeating: color, count: max(0, count))
+    init(fills: [RailJewel], capacity: Int, size: CGFloat = 30, maxSlots: Int = 60) {
+        self.fills = fills
         self.capacity = capacity
         self.size = size
         self.maxSlots = maxSlots
     }
 
-    init(fills: [MateriaColor], capacity: Int, size: CGFloat = 30, maxSlots: Int = 60) {
-        self.fills = fills
+    /// Convenience for a single-activity rail with no note information.
+    init(count: Int, color: MateriaColor, capacity: Int, size: CGFloat = 30, maxSlots: Int = 60) {
+        self.fills = Array(repeating: RailJewel(color), count: max(0, count))
         self.capacity = capacity
         self.size = size
         self.maxSlots = maxSlots
@@ -162,8 +245,13 @@ struct SlotRail: View {
                 switch content {
                 case .empty:
                     MateriaSocket(size: size)
-                case .filled(let color, let overflow):
-                    MateriaOrb(color: color, size: size, overflow: overflow)
+                case .filled(let jewel, let overflow):
+                    MateriaOrb(
+                        color: jewel.color,
+                        size: size,
+                        overflow: overflow,
+                        hasNote: jewel.hasNote
+                    )
                 }
             }
 
