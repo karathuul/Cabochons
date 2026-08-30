@@ -6,7 +6,7 @@
 //
 
 import AppIntents
-import SwiftUI
+internal import SwiftUI
 import WidgetKit
 
 struct MateriaWidgetControl: ControlWidget {

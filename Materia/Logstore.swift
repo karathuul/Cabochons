@@ -1,13 +1,7 @@
 import Foundation
+import WidgetKit
 import Observation
 internal import SwiftUI
-
-/// On-disk shape. Versioned so the format can change later without guessing.
-private struct LogFile: Codable {
-    var version: Int = 1
-    var dayStartHour: Int = 0
-    var activities: [Activity] = []
-}
 
 @Observable
 final class LogStore {
@@ -16,7 +10,7 @@ final class LogStore {
 
     /// Hour at which a new day begins. 0 = midnight.
     var dayStartHour: Int = 0 {
-        didSet { if dayStartHour != oldValue { save() } }
+        didSet { if dayStartHour != oldValue, !isLoading { save() } }
     }
 
     var calc: DayCalculator {
@@ -205,41 +199,29 @@ final class LogStore {
 
     // MARK: Persistence
 
-    private static let fileName = "materialog.json"
-
-    private var fileURL: URL {
-        let base = (try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        )) ?? URL.documentsDirectory
-
-        let folder = base.appendingPathComponent("MateriaLog", isDirectory: true)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        return folder.appendingPathComponent(Self.fileName)
-    }
+    /// Guards the didSet on `dayStartHour` from writing during load, when we're
+    /// only mirroring what's already on disk.
+    private var isLoading = false
 
     init() {
+        SharedStorage.migrateIfNeeded()
         load()
     }
 
     func load() {
-        guard let data = try? Data(contentsOf: fileURL) else { return }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        guard let file = try? decoder.decode(LogFile.self, from: data) else { return }
+        isLoading = true
+        defer { isLoading = false }
+        let file = SharedStorage.load()
         activities = file.activities
         dayStartHour = file.dayStartHour
     }
 
     func save() {
-        let file = LogFile(dayStartHour: dayStartHour, activities: activities)
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(file) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+        guard !isLoading else { return }
+        SharedStorage.write(LogFile(dayStartHour: dayStartHour, activities: activities))
+        // Read-only widgets show today's progress, so every write is a chance
+        // for them to be stale. Cheap to ask for a refresh; WidgetKit coalesces.
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// Chronological across all activities, so it matches the day rail's order.

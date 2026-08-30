@@ -7,7 +7,7 @@
 
 import ActivityKit
 import WidgetKit
-import SwiftUI
+internal import SwiftUI
 
 struct MateriaWidgetAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
