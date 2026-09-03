@@ -19,6 +19,31 @@ enum SlotContent: Hashable {
     case filled(RailJewel, overflow: Bool)
 }
 
+private struct TiltedSpecular: View {
+    let size: CGFloat
+
+    @AppStorage("shimmerEnabled") private var shimmerEnabled = true
+    @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
+    @Environment(TiltSource.self) private var motion: TiltSource?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var travel: CGSize {
+        guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
+        let d = size * 0.22 * shimmerIntensity
+        return CGSize(width: -motion.tilt.x * d, height: -motion.tilt.y * d)
+    }
+
+    var body: some View {
+        Ellipse()
+            .fill(.white.opacity(0.75))
+            .frame(width: size * 0.26, height: size * 0.17)
+            .rotationEffect(.degrees(-24))
+            .offset(x: -size * 0.14 + travel.width,
+                    y: -size * 0.22 + travel.height)
+            .blur(radius: size * 0.035)
+    }
+}
+
 // MARK: - The orb
 
 struct MateriaOrb: View {
@@ -61,12 +86,7 @@ struct MateriaOrb: View {
                 )
 
             // Specular highlight.
-            Ellipse()
-                .fill(.white.opacity(0.75))
-                .frame(width: size * 0.26, height: size * 0.17)
-                .rotationEffect(.degrees(-24))
-                .offset(x: -size * 0.14, y: -size * 0.22)
-                .blur(radius: size * 0.035)
+            TiltedSpecular(size: size)
 
             if overflow, size >= 18 {
                 Image(systemName: "star.fill")

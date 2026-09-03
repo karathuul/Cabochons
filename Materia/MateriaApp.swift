@@ -6,6 +6,9 @@ import AppKit
 @main
 struct MateriaLogApp: App {
     @State private var store = LogStore()
+    @State private var motion = TiltSource()
+    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("shimmerEnabled") private var shimmerEnabled = true
 
     var body: some Scene {
         mainWindow
@@ -43,8 +46,10 @@ struct MateriaLogApp: App {
     private var rootView: some View {
         ContentView()
             .environment(store)
-            // The interface is lit by the orbs. Light mode would kill it,
-            // so this is a deliberate lock rather than an oversight.
+            .environment(motion)
+            .onChange(of: scenePhase, initial: true) { _, phase in
+                motion.isActive = shimmerEnabled && phase == .active
+            }
             .preferredColorScheme(.dark)
             .tint(Color(hex: 0x4FB6FF))
             #if os(macOS)

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		74302E113049480400586E16 /* TiltSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74302E10304947ED00586E16 /* TiltSource.swift */; };
+		74302E12304948C400586E16 /* TiltSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74302E10304947ED00586E16 /* TiltSource.swift */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* MateriaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -58,6 +60,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		74302E10304947ED00586E16 /* TiltSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltSource.swift; sourceTree = "<group>"; };
 		748DB295302CF5B6006C16FD /* Materia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Materia.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
@@ -151,6 +154,7 @@
 		74E5ADF33043FAF4007B24DB /* Materia */ = {
 			isa = PBXGroup;
 			children = (
+				74302E10304947ED00586E16 /* TiltSource.swift */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
 				74E5ADE83043FAF4007B24DB /* Components.swift */,
@@ -274,6 +278,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74E5ADF43043FAF4007B24DB /* Activitydetailview.swift in Sources */,
+				74302E113049480400586E16 /* TiltSource.swift in Sources */,
 				74E5ADF53043FAF4007B24DB /* Components.swift in Sources */,
 				74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */,
 				74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */,
@@ -297,6 +302,7 @@
 				74E5ADE33043F74F007B24DB /* MateriaWidgetControl.swift in Sources */,
 				74E5AE00304401CC007B24DB /* Stats.swift in Sources */,
 				74E5ADFF304401C0007B24DB /* Models.swift in Sources */,
+				74302E12304948C400586E16 /* TiltSource.swift in Sources */,
 				74E5ADE43043F74F007B24DB /* MateriaWidgetLiveActivity.swift in Sources */,
 				74E5ADE53043F74F007B24DB /* MateriaWidgetViews.swift in Sources */,
 			);
