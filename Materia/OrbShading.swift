@@ -9,6 +9,15 @@
 internal import SwiftUI
 
 struct OrbShading: Equatable {
+    
+    var quiet: OrbShading {
+        var s = self
+        s.specOpacity *= 0.35
+        s.specTravel *= 0.4
+        s.glowNearOpacity *= 0.6
+        s.glowFarOpacity *= 0.4
+        return s
+    }
 
     // Body — the main radial gradient, rim → core → deep.
     var bodyCenter = UnitPoint(x: 0.34, y: 0.28)
@@ -21,7 +30,7 @@ struct OrbShading: Equatable {
 
     // Rim — the containing edge of the sphere.
     var rimOpacity: Double = 0.70
-    var rimWidth: CGFloat = 0.045
+    var rimWidth: CGFloat = 0.035
 
     // Specular — the moving highlight.
     var specWidth: CGFloat = 0.26

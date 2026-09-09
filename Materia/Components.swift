@@ -1,7 +1,5 @@
 internal import SwiftUI
 
-
-
 // MARK: - What sits in one socket
 
 /// One filled socket's worth of information. The rail needs more than a colour
@@ -24,13 +22,15 @@ enum SlotContent: Hashable {
 private struct TiltedSpecular: View {
     let size: CGFloat
     @Environment(\.orbShading) private var sh
-
-
     @AppStorage("shimmerEnabled") private var shimmerEnabled = true
     @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
     @Environment(TiltSource.self) private var motion: TiltSource?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var scale: Double {
+        min(1, max(0.3, Double(size) / 30))
+    }
+    
     private var travel: CGSize {
         guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
         let d = size * sh.specTravel * shimmerIntensity

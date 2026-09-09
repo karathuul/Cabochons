@@ -5,6 +5,7 @@ internal import SwiftUI
 struct DayView: View {
     @Environment(LogStore.self) private var store
 
+
     @State private var pulse = 0
     @State private var inspecting: CombinedDay?
     @State private var noting: LoggedJewel?
@@ -230,6 +231,8 @@ struct DayView: View {
             }
         }
         .panel()
+        // Dont render specular shiny on the heavy populated areas
+        .environment(\.orbShading, OrbShading.standard.quiet)
     }
 }
 
