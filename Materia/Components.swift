@@ -1,5 +1,7 @@
 internal import SwiftUI
 
+
+
 // MARK: - What sits in one socket
 
 /// One filled socket's worth of information. The rail needs more than a colour
@@ -21,6 +23,8 @@ enum SlotContent: Hashable {
 
 private struct TiltedSpecular: View {
     let size: CGFloat
+    @Environment(\.orbShading) private var sh
+
 
     @AppStorage("shimmerEnabled") private var shimmerEnabled = true
     @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
@@ -29,24 +33,27 @@ private struct TiltedSpecular: View {
 
     private var travel: CGSize {
         guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
-        let d = size * 0.22 * shimmerIntensity
+        let d = size * sh.specTravel * shimmerIntensity
         return CGSize(width: -motion.tilt.x * d, height: -motion.tilt.y * d)
     }
 
     var body: some View {
         Ellipse()
-            .fill(.white.opacity(0.75))
-            .frame(width: size * 0.26, height: size * 0.17)
-            .rotationEffect(.degrees(-24))
-            .offset(x: -size * 0.14 + travel.width,
-                    y: -size * 0.22 + travel.height)
-            .blur(radius: size * 0.035)
+            .fill(.white.opacity(sh.specOpacity))
+            .frame(width: size * sh.specWidth, height: size * sh.specHeight)
+            .rotationEffect(.degrees(sh.specAngle))
+            .offset(x: size * sh.specX + travel.width,
+                    y: size * sh.specY + travel.height)
+            .blur(radius: size * sh.specBlur)
     }
 }
 
 // MARK: - The orb
 
 struct MateriaOrb: View {
+    
+    @Environment(\.orbShading) private var sh
+
     let color: MateriaColor
     var size: CGFloat = 30
     /// Jewels past the day's capacity get a gold rim and a star.
@@ -56,36 +63,26 @@ struct MateriaOrb: View {
     var glow: CGFloat = 1
 
     var body: some View {
+        
+        // Whate the orb is gonna be looking like
         ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [color.rim, color.core, color.deep],
-                        center: UnitPoint(x: 0.34, y: 0.28),
-                        startRadius: size * 0.02,
-                        endRadius: size * 0.78
-                    )
-                )
+            Circle().fill(RadialGradient(
+                    colors: [color.rim, color.core, color.deep],
+                    center: sh.bodyCenter,
+                    startRadius: size * 0.02,
+                    endRadius: size * sh.bodyOuter))
 
-            // Light bounced off the socket floor, back through the glass.
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [color.rim.opacity(0.5), .clear],
-                        center: UnitPoint(x: 0.68, y: 0.82),
-                        startRadius: 0,
-                        endRadius: size * 0.42
-                    )
-                )
+            Circle().fill(RadialGradient(
+                    colors: [color.rim.opacity(sh.bounceOpacity), .clear],
+                    center: sh.bounceCenter,
+                    startRadius: 0,
+                    endRadius: size * sh.bounceRadius))
                 .blendMode(.plusLighter)
 
-            Circle()
-                .strokeBorder(
-                    overflow ? Chrome.gold.opacity(0.95) : color.rim.opacity(0.7),
-                    lineWidth: max(1, size * 0.045)
-                )
+            Circle().strokeBorder(
+                    overflow ? Chrome.gold.opacity(0.95) : color.rim.opacity(sh.rimOpacity),
+                    lineWidth: max(1, size * sh.rimWidth))
 
-            // Specular highlight.
             TiltedSpecular(size: size)
 
             if overflow, size >= 18 {
@@ -102,8 +99,8 @@ struct MateriaOrb: View {
         }
         .compositingGroup()
         .frame(width: size, height: size)
-        .shadow(color: color.core.opacity(0.55 * glow), radius: size * 0.30)
-        .shadow(color: color.core.opacity(0.30 * glow), radius: size * 0.70)
+        .shadow(color: color.core.opacity(sh.glowNearOpacity * glow), radius: size * sh.glowNearRadius)
+        .shadow(color: color.core.opacity(sh.glowFarOpacity * glow), radius: size * sh.glowFarRadius)
     }
 }
 

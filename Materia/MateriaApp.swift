@@ -1,4 +1,5 @@
 internal import SwiftUI
+import AppIntents
 #if os(macOS)
 import AppKit
 #endif
@@ -7,6 +8,7 @@ import AppKit
 struct MateriaLogApp: App {
     @State private var store = LogStore()
     @State private var motion = TiltSource()
+    @Environment(\.orbShading) private var sh
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("shimmerEnabled") private var shimmerEnabled = true
 
@@ -44,17 +46,19 @@ struct MateriaLogApp: App {
     }
 
     private var rootView: some View {
-        ContentView()
-            .environment(store)
-            .environment(motion)
-            .onChange(of: scenePhase, initial: true) { _, phase in
-                motion.isActive = shimmerEnabled && phase == .active
-            }
-            .preferredColorScheme(.dark)
-            .tint(Color(hex: 0x4FB6FF))
-            #if os(macOS)
-            .frame(minWidth: 760, minHeight: 520)
-            #endif
+        OrbLab.init()
+        
+//        ContentView()
+//            .environment(store)
+//            .environment(motion)
+//            .onChange(of: scenePhase, initial: true) { _, phase in
+//                motion.isActive = shimmerEnabled && phase == .active
+//            }
+//            .preferredColorScheme(.dark)
+//            .tint(Color(hex: 0x4FB6FF))
+//            #if os(macOS)
+//            .frame(minWidth: 760, minHeight: 520)
+//            #endif
     }
 }
 

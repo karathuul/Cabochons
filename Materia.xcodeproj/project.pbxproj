@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		74302E113049480400586E16 /* TiltSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74302E10304947ED00586E16 /* TiltSource.swift */; };
 		74302E12304948C400586E16 /* TiltSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74302E10304947ED00586E16 /* TiltSource.swift */; };
+		74C9832230510EEC00929C84 /* OrbShading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9832130510EE600929C84 /* OrbShading.swift */; };
+		74C9832430510F0700929C84 /* Orblab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9832330510F0400929C84 /* Orblab.swift */; };
+		74C9832F3051252200929C84 /* OrbShading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9832130510EE600929C84 /* OrbShading.swift */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* MateriaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -62,6 +65,8 @@
 /* Begin PBXFileReference section */
 		74302E10304947ED00586E16 /* TiltSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltSource.swift; sourceTree = "<group>"; };
 		748DB295302CF5B6006C16FD /* Materia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Materia.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		74C9832130510EE600929C84 /* OrbShading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbShading.swift; sourceTree = "<group>"; };
+		74C9832330510F0400929C84 /* Orblab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orblab.swift; sourceTree = "<group>"; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		74E5AD753040B1E2007B24DB /* MateriaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MateriaWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -88,6 +93,31 @@
 		74E5ADF23043FAF4007B24DB /* Stats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stats.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Materia" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Activityentity.swift,
+				Activitystatintent.swift,
+				Intentbridge.swift,
+				Logjewelintent.swift,
+				Materiashortcuts.swift,
+			);
+			target = 748DB294302CF5B6006C16FD /* Materia */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		74302E1330494DA200586E16 /* Intents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Materia" target */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		748DB292302CF5B6006C16FD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -111,6 +141,7 @@
 		748DB28C302CF5B6006C16FD = {
 			isa = PBXGroup;
 			children = (
+				74302E1330494DA200586E16 /* Intents */,
 				74E5AD753040B1E2007B24DB /* MateriaWidgetExtension.entitlements */,
 				74E5ADF33043FAF4007B24DB /* Materia */,
 				74E5ADDE3043F74F007B24DB /* MateriaWidget */,
@@ -154,6 +185,8 @@
 		74E5ADF33043FAF4007B24DB /* Materia */ = {
 			isa = PBXGroup;
 			children = (
+				74C9832330510F0400929C84 /* Orblab.swift */,
+				74C9832130510EE600929C84 /* OrbShading.swift */,
 				74302E10304947ED00586E16 /* TiltSource.swift */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
@@ -280,9 +313,11 @@
 				74E5ADF43043FAF4007B24DB /* Activitydetailview.swift in Sources */,
 				74302E113049480400586E16 /* TiltSource.swift in Sources */,
 				74E5ADF53043FAF4007B24DB /* Components.swift in Sources */,
+				74C9832230510EEC00929C84 /* OrbShading.swift in Sources */,
 				74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */,
 				74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */,
 				74E5ADF83043FAF4007B24DB /* Logstore.swift in Sources */,
+				74C9832430510F0700929C84 /* Orblab.swift in Sources */,
 				74E5ADF93043FAF4007B24DB /* MateriaApp.swift in Sources */,
 				74E5ADFA3043FAF4007B24DB /* Models.swift in Sources */,
 				74E5ADFB3043FAF4007B24DB /* Sharedstorage.swift in Sources */,
@@ -302,6 +337,7 @@
 				74E5ADE33043F74F007B24DB /* MateriaWidgetControl.swift in Sources */,
 				74E5AE00304401CC007B24DB /* Stats.swift in Sources */,
 				74E5ADFF304401C0007B24DB /* Models.swift in Sources */,
+				74C9832F3051252200929C84 /* OrbShading.swift in Sources */,
 				74302E12304948C400586E16 /* TiltSource.swift in Sources */,
 				74E5ADE43043F74F007B24DB /* MateriaWidgetLiveActivity.swift in Sources */,
 				74E5ADE53043F74F007B24DB /* MateriaWidgetViews.swift in Sources */,

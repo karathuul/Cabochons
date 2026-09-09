@@ -2,10 +2,13 @@ import Foundation
 import WidgetKit
 import Observation
 internal import SwiftUI
+import AppIntents
 
 @Observable
 final class LogStore {
 
+    static let shared = LogStore()
+    
     private(set) var activities: [Activity] = []
 
     /// Hour at which a new day begins. 0 = midnight.
