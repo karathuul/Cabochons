@@ -46,19 +46,17 @@ struct MateriaLogApp: App {
     }
 
     private var rootView: some View {
-        OrbLab.init()
-        
-//        ContentView()
-//            .environment(store)
-//            .environment(motion)
-//            .onChange(of: scenePhase, initial: true) { _, phase in
-//                motion.isActive = shimmerEnabled && phase == .active
-//            }
-//            .preferredColorScheme(.dark)
-//            .tint(Color(hex: 0x4FB6FF))
-//            #if os(macOS)
-//            .frame(minWidth: 760, minHeight: 520)
-//            #endif
+        ContentView()
+            .environment(store)
+            .environment(motion)
+            .onChange(of: scenePhase, initial: true) { _, phase in
+                motion.isActive = shimmerEnabled && phase == .active
+            }
+            .preferredColorScheme(.dark)
+            .tint(Color(hex: 0x4FB6FF))
+            #if os(macOS)
+            .frame(minWidth: 760, minHeight: 520)
+            #endif
     }
 }
 
