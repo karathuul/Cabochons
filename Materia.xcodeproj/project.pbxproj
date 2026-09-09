@@ -7,11 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		74302E113049480400586E16 /* TiltSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74302E10304947ED00586E16 /* TiltSource.swift */; };
-		74302E12304948C400586E16 /* TiltSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74302E10304947ED00586E16 /* TiltSource.swift */; };
-		74C9832230510EEC00929C84 /* OrbShading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9832130510EE600929C84 /* OrbShading.swift */; };
-		74C9832430510F0700929C84 /* Orblab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9832330510F0400929C84 /* Orblab.swift */; };
-		74C9832F3051252200929C84 /* OrbShading.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9832130510EE600929C84 /* OrbShading.swift */; };
+		74C9833230512D0D00929C84 /* Dataexport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9833130512D0500929C84 /* Dataexport.swift */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* MateriaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -22,7 +18,6 @@
 		74E5ADE43043F74F007B24DB /* MateriaWidgetLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDC3043F74F007B24DB /* MateriaWidgetLiveActivity.swift */; };
 		74E5ADE53043F74F007B24DB /* MateriaWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDD3043F74F007B24DB /* MateriaWidgetViews.swift */; };
 		74E5ADF43043FAF4007B24DB /* Activitydetailview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */; };
-		74E5ADF53043FAF4007B24DB /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADE83043FAF4007B24DB /* Components.swift */; };
 		74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADE93043FAF4007B24DB /* ContentView.swift */; };
 		74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEA3043FAF4007B24DB /* Dayview.swift */; };
 		74E5ADF83043FAF4007B24DB /* Logstore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEB3043FAF4007B24DB /* Logstore.swift */; };
@@ -34,7 +29,6 @@
 		74E5ADFE3043FAF4007B24DB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 74E5ADE73043FAF4007B24DB /* Assets.xcassets */; };
 		74E5ADFF304401C0007B24DB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEF3043FAF4007B24DB /* Models.swift */; };
 		74E5AE00304401CC007B24DB /* Stats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADF23043FAF4007B24DB /* Stats.swift */; };
-		74E5AE01304401DE007B24DB /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADE83043FAF4007B24DB /* Components.swift */; };
 		74E5AE02304401E8007B24DB /* Sharedstorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADF03043FAF4007B24DB /* Sharedstorage.swift */; };
 /* End PBXBuildFile section */
 
@@ -63,10 +57,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		74302E10304947ED00586E16 /* TiltSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiltSource.swift; sourceTree = "<group>"; };
 		748DB295302CF5B6006C16FD /* Materia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Materia.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		74C9832130510EE600929C84 /* OrbShading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbShading.swift; sourceTree = "<group>"; };
-		74C9832330510F0400929C84 /* Orblab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Orblab.swift; sourceTree = "<group>"; };
+		74C9833130512D0500929C84 /* Dataexport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataexport.swift; sourceTree = "<group>"; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		74E5AD753040B1E2007B24DB /* MateriaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MateriaWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -80,7 +72,6 @@
 		74E5ADDD3043F74F007B24DB /* MateriaWidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MateriaWidgetViews.swift; sourceTree = "<group>"; };
 		74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activitydetailview.swift; sourceTree = "<group>"; };
 		74E5ADE73043FAF4007B24DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		74E5ADE83043FAF4007B24DB /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		74E5ADE93043FAF4007B24DB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		74E5ADEA3043FAF4007B24DB /* Dayview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dayview.swift; sourceTree = "<group>"; };
 		74E5ADEB3043FAF4007B24DB /* Logstore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logstore.swift; sourceTree = "<group>"; };
@@ -105,6 +96,15 @@
 			);
 			target = 748DB294302CF5B6006C16FD /* Materia */;
 		};
+		74C9833430512DCC00929C84 /* Exceptions for "OrbGraphics" folder in "MateriaWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Components.swift,
+				OrbShading.swift,
+				TiltSource.swift,
+			);
+			target = 74E5AD9F3043E4E5007B24DB /* MateriaWidget */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -114,6 +114,14 @@
 				74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Materia" target */,
 			);
 			path = Intents;
+			sourceTree = "<group>";
+		};
+		74C9833330512DB600929C84 /* OrbGraphics */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				74C9833430512DCC00929C84 /* Exceptions for "OrbGraphics" folder in "MateriaWidget" target */,
+			);
+			path = OrbGraphics;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -185,12 +193,10 @@
 		74E5ADF33043FAF4007B24DB /* Materia */ = {
 			isa = PBXGroup;
 			children = (
-				74C9832330510F0400929C84 /* Orblab.swift */,
-				74C9832130510EE600929C84 /* OrbShading.swift */,
-				74302E10304947ED00586E16 /* TiltSource.swift */,
+				74C9833330512DB600929C84 /* OrbGraphics */,
+				74C9833130512D0500929C84 /* Dataexport.swift */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
-				74E5ADE83043FAF4007B24DB /* Components.swift */,
 				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
 				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
 				74E5ADEB3043FAF4007B24DB /* Logstore.swift */,
@@ -221,6 +227,9 @@
 			);
 			dependencies = (
 				74E5ADB03043E4E7007B24DB /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				74C9833330512DB600929C84 /* OrbGraphics */,
 			);
 			name = Materia;
 			packageProductDependencies = (
@@ -311,15 +320,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				74E5ADF43043FAF4007B24DB /* Activitydetailview.swift in Sources */,
-				74302E113049480400586E16 /* TiltSource.swift in Sources */,
-				74E5ADF53043FAF4007B24DB /* Components.swift in Sources */,
-				74C9832230510EEC00929C84 /* OrbShading.swift in Sources */,
 				74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */,
 				74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */,
 				74E5ADF83043FAF4007B24DB /* Logstore.swift in Sources */,
-				74C9832430510F0700929C84 /* Orblab.swift in Sources */,
 				74E5ADF93043FAF4007B24DB /* MateriaApp.swift in Sources */,
 				74E5ADFA3043FAF4007B24DB /* Models.swift in Sources */,
+				74C9833230512D0D00929C84 /* Dataexport.swift in Sources */,
 				74E5ADFB3043FAF4007B24DB /* Sharedstorage.swift in Sources */,
 				74E5ADFC3043FAF4007B24DB /* Sheets.swift in Sources */,
 				74E5ADFD3043FAF4007B24DB /* Stats.swift in Sources */,
@@ -331,14 +337,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				74E5ADE13043F74F007B24DB /* Materiaprovider.swift in Sources */,
-				74E5AE01304401DE007B24DB /* Components.swift in Sources */,
 				74E5AE02304401E8007B24DB /* Sharedstorage.swift in Sources */,
 				74E5ADE23043F74F007B24DB /* MateriaWidgetBundle.swift in Sources */,
 				74E5ADE33043F74F007B24DB /* MateriaWidgetControl.swift in Sources */,
 				74E5AE00304401CC007B24DB /* Stats.swift in Sources */,
 				74E5ADFF304401C0007B24DB /* Models.swift in Sources */,
-				74C9832F3051252200929C84 /* OrbShading.swift in Sources */,
-				74302E12304948C400586E16 /* TiltSource.swift in Sources */,
 				74E5ADE43043F74F007B24DB /* MateriaWidgetLiveActivity.swift in Sources */,
 				74E5ADE53043F74F007B24DB /* MateriaWidgetViews.swift in Sources */,
 			);
