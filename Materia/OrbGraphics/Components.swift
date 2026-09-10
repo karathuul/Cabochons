@@ -51,8 +51,17 @@ private struct TiltedSpecular: View {
 // MARK: - The orb
 
 struct MateriaOrb: View {
-    
+    @AppStorage("shimmerEnabled") private var shimmerEnabled = true
+    @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
+    @Environment(TiltSource.self) private var motion: TiltSource?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.orbShading) private var sh
+    
+    private var travel: CGSize {
+        guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
+        let d = size * sh.specTravel * shimmerIntensity
+        return CGSize(width: -motion.tilt.x * d, height: -motion.tilt.y * d)
+    }
 
     let color: MateriaColor
     var size: CGFloat = 30
@@ -74,7 +83,10 @@ struct MateriaOrb: View {
 
             Circle().fill(RadialGradient(
                     colors: [color.rim.opacity(sh.bounceOpacity), .clear],
-                    center: sh.bounceCenter,
+                    center:
+                        UnitPoint(
+                            x: sh.bounceCenter.x - travel.width*0.01,
+                            y: sh.bounceCenter.y - travel.height*0.01),
                     startRadius: 0,
                     endRadius: size * sh.bounceRadius))
                 .blendMode(.plusLighter)

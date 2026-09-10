@@ -46,6 +46,8 @@ struct MateriaLogApp: App {
     }
 
     private var rootView: some View {
+//        OrbLab.init()
+        
         ContentView()
             .environment(store)
             .environment(motion)
