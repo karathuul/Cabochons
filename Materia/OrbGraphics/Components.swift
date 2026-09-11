@@ -19,50 +19,17 @@ enum SlotContent: Hashable {
     case filled(RailJewel, overflow: Bool)
 }
 
-private struct TiltedSpecular: View {
-    let size: CGFloat
-    @Environment(\.orbShading) private var sh
-    @AppStorage("shimmerEnabled") private var shimmerEnabled = true
-    @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
-    @Environment(TiltSource.self) private var motion: TiltSource?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private var scale: Double {
-        min(1, max(0.3, Double(size) / 30))
-    }
-    
-    private var travel: CGSize {
-        guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
-        let d = size * sh.specTravel * shimmerIntensity
-        return CGSize(width: -motion.tilt.x * d, height: -motion.tilt.y * d)
-    }
-
-    var body: some View {
-        Ellipse()
-            .fill(.white.opacity(sh.specOpacity))
-            .frame(width: size * sh.specWidth, height: size * sh.specHeight)
-            .rotationEffect(.degrees(sh.specAngle))
-            .offset(x: size * sh.specX + travel.width,
-                    y: size * sh.specY + travel.height)
-            .blur(radius: size * sh.specBlur)
-    }
-}
-
 // MARK: - The orb
 
+/// A jewel. This is the public face; it picks a render tier by size.
+///
+/// At or above `liveThreshold` the orb is *live*: it reads device tilt so the
+/// specular slides, and it spends the render passes (a blur, a two-stop glow)
+/// that make a 30–108pt sphere read as glass. Below that none of it survives
+/// the pixel grid — a 14pt rail orb was paying for a highlight it couldn't
+/// show, and re-rendering it on every CoreMotion tick. Small orbs are drawn
+/// static: no tilt subscription, no blur passes, one glow instead of two.
 struct MateriaOrb: View {
-    @AppStorage("shimmerEnabled") private var shimmerEnabled = true
-    @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
-    @Environment(TiltSource.self) private var motion: TiltSource?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.orbShading) private var sh
-    
-    private var travel: CGSize {
-        guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
-        let d = size * sh.specTravel * shimmerIntensity
-        return CGSize(width: -motion.tilt.x * d, height: -motion.tilt.y * d)
-    }
-
     let color: MateriaColor
     var size: CGFloat = 30
     /// Jewels past the day's capacity get a gold rim and a star.
@@ -71,10 +38,70 @@ struct MateriaOrb: View {
     var hasNote: Bool = false
     var glow: CGFloat = 1
 
+    /// Orbs this size and up are live. History rails draw at 14; everything
+    /// else is 30 or larger, so nothing tuned in OrbLab changes.
+    static let liveThreshold: CGFloat = 20
+
     var body: some View {
-        
+        if size >= Self.liveThreshold {
+            LiveOrb(color: color, size: size, overflow: overflow, hasNote: hasNote, glow: glow)
+        } else {
+            OrbFace(
+                color: color, size: size, overflow: overflow, hasNote: hasNote, glow: glow,
+                travel: .zero, live: false
+            )
+        }
+    }
+}
+
+/// The only view that reads the tilt source. Observation tracks what a body
+/// *accesses*, so an orb that never touches `motion.tilt` never gets
+/// invalidated by it — which is why the tilt read and the shimmer settings
+/// live here rather than in `MateriaOrb`, where every orb would carry them.
+private struct LiveOrb: View {
+    let color: MateriaColor
+    let size: CGFloat
+    let overflow: Bool
+    let hasNote: Bool
+    let glow: CGFloat
+
+    @AppStorage("shimmerEnabled") private var shimmerEnabled = true
+    @AppStorage("shimmerIntensity") private var shimmerIntensity = 0.5
+    @Environment(TiltSource.self) private var motion: TiltSource?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.orbShading) private var sh
+
+    private var travel: CGSize {
+        guard shimmerEnabled, !reduceMotion, let motion else { return .zero }
+        let d = size * sh.specTravel * shimmerIntensity
+        return CGSize(width: -motion.tilt.x * d, height: -motion.tilt.y * d)
+    }
+
+    var body: some View {
+        OrbFace(
+            color: color, size: size, overflow: overflow, hasNote: hasNote, glow: glow,
+            travel: travel, live: true
+        )
+    }
+}
+
+/// The drawing, shared by both tiers so a gem is the same gem at any size.
+/// `travel` is the specular's displacement from tilt (always zero when
+/// static); `live` gates the passes that only pay off at button scale.
+private struct OrbFace: View {
+    let color: MateriaColor
+    let size: CGFloat
+    let overflow: Bool
+    let hasNote: Bool
+    let glow: CGFloat
+    let travel: CGSize
+    let live: Bool
+
+    @Environment(\.orbShading) private var sh
+
+    var body: some View {
         // Whate the orb is gonna be looking like
-        ZStack {
+        let orb = ZStack {
             Circle().fill(RadialGradient(
                     colors: [color.rim, color.core, color.deep],
                     center: sh.bodyCenter,
@@ -95,7 +122,7 @@ struct MateriaOrb: View {
                     overflow ? Chrome.gold.opacity(0.95) : color.rim.opacity(sh.rimOpacity),
                     lineWidth: max(1, size * sh.rimWidth))
 
-            TiltedSpecular(size: size)
+            Specular(size: size, travel: travel, blurred: live)
 
             if overflow, size >= 18 {
                 Image(systemName: "star.fill")
@@ -112,7 +139,53 @@ struct MateriaOrb: View {
         .compositingGroup()
         .frame(width: size, height: size)
         .shadow(color: color.core.opacity(sh.glowNearOpacity * glow), radius: size * sh.glowNearRadius)
-        .shadow(color: color.core.opacity(sh.glowFarOpacity * glow), radius: size * sh.glowFarRadius)
+
+        // The far glow is a second full blur pass for a few pixels of haze.
+        // At rail size it vanishes into the panel gradient, so it's skipped.
+        if live {
+            orb.shadow(color: color.core.opacity(sh.glowFarOpacity * glow), radius: size * sh.glowFarRadius)
+        } else {
+            orb
+        }
+    }
+}
+
+/// The highlight where the glass catches light.
+///
+/// Live orbs blur a flat ellipse: the softness is real and it tracks tilt.
+/// Static orbs get the softness baked into an elliptical gradient instead —
+/// indistinguishable at 14pt, and a gradient is one fill where a blur is a
+/// whole offscreen pass.
+private struct Specular: View {
+    let size: CGFloat
+    let travel: CGSize
+    let blurred: Bool
+    @Environment(\.orbShading) private var sh
+
+    private var fill: AnyShapeStyle {
+        let white = Color.white.opacity(sh.specOpacity)
+        return blurred
+            ? AnyShapeStyle(white)
+            : AnyShapeStyle(EllipticalGradient(
+                colors: [white, white, .clear],
+                center: .center,
+                startRadiusFraction: 0.3,
+                endRadiusFraction: 0.5))
+    }
+
+    var body: some View {
+        let ellipse = Ellipse()
+            .fill(fill)
+            .frame(width: size * sh.specWidth, height: size * sh.specHeight)
+            .rotationEffect(.degrees(sh.specAngle))
+            .offset(x: size * sh.specX + travel.width,
+                    y: size * sh.specY + travel.height)
+
+        if blurred {
+            ellipse.blur(radius: size * sh.specBlur)
+        } else {
+            ellipse
+        }
     }
 }
 
@@ -144,10 +217,17 @@ struct MateriaSocket: View {
                     lineWidth: max(1.2, size * 0.075)
                 )
 
-            Circle()
+            // Inner shadow. Same cutoff as the orb: below it the blur radius
+            // is under half a pixel and not worth its own render pass.
+            let lip = Circle()
                 .inset(by: size * 0.11)
                 .stroke(Color.black.opacity(0.55), lineWidth: max(1, size * 0.05))
-                .blur(radius: size * 0.03)
+
+            if size >= MateriaOrb.liveThreshold {
+                lip.blur(radius: size * 0.03)
+            } else {
+                lip
+            }
         }
         .frame(width: size, height: size)
     }
@@ -203,11 +283,18 @@ private struct NoteGlint: View {
                 .frame(width: size * 0.92, height: size * 0.92)
 
             // The glint itself. The faint shadow buys separation on very light
-            // gems, where white-on-white would otherwise vanish.
-            GlintShape()
+            // gems, where white-on-white would otherwise vanish. At rail size
+            // it's half a pixel of shadow for a full render pass, so static
+            // orbs go without.
+            let glint = GlintShape()
                 .fill(.white.opacity(0.95))
                 .frame(width: size * 0.62, height: size * 0.62)
-                .shadow(color: .black.opacity(0.35), radius: max(0.5, size * 0.02))
+
+            if size >= MateriaOrb.liveThreshold {
+                glint.shadow(color: .black.opacity(0.35), radius: max(0.5, size * 0.02))
+            } else {
+                glint
+            }
         }
         .rotationEffect(.degrees(-15))
         .offset(x: -size * 0.14, y: -size * 0.22)

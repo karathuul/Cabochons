@@ -22,7 +22,7 @@ struct LoggedJewel: Identifiable, Hashable {
 // MARK: - Per-activity
 
 /// One turn of an activity's cadence.
-struct PeriodSummary: Identifiable, Hashable {
+struct PeriodSummary: Identifiable, Hashable, Equatable {
     let index: Int
     let start: Date
     /// Exclusive.

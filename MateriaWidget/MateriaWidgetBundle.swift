@@ -5,6 +5,7 @@ internal import SwiftUI
 struct MateriaWidgetBundle: WidgetBundle {
     var body: some Widget {
         MateriaWidget()
+        HistoryWidget()
     }
 }
 

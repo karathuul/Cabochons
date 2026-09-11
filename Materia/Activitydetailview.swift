@@ -309,6 +309,7 @@ struct ActivityDetailView: View {
                                 ),
                                 color: activity.color
                             )
+                            .equatable()
                         }
                         .buttonStyle(.plain)
 
@@ -325,7 +326,7 @@ struct ActivityDetailView: View {
 
 // MARK: - Period row
 
-private struct PeriodRow: View {
+private struct PeriodRow: View, Equatable {
     let period: PeriodSummary
     let label: String
     let color: MateriaColor
