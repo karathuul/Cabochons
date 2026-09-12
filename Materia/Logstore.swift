@@ -1,8 +1,8 @@
-import Foundation
+internal import Foundation
 import WidgetKit
 import Observation
 internal import SwiftUI
-import AppIntents
+internal import AppIntents
 
 @Observable
 final class LogStore : Observable {
@@ -225,6 +225,7 @@ final class LogStore : Observable {
         // Read-only widgets show today's progress, so every write is a chance
         // for them to be stale. Cheap to ask for a refresh; WidgetKit coalesces.
         WidgetCenter.shared.reloadAllTimelines()
+        MateriaShortcuts.updateAppShortcutParameters()
     }
 
     /// Chronological across all activities, so it matches the day rail's order.

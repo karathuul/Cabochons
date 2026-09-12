@@ -1,4 +1,4 @@
-import Foundation
+internal import Foundation
 
 // MARK: - A jewel with its provenance attached
 

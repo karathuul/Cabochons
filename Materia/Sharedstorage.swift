@@ -1,4 +1,4 @@
-import Foundation
+internal import Foundation
 
 /// The identifier for the App Group container the app and its widget share.
 ///

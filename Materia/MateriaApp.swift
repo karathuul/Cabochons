@@ -1,12 +1,12 @@
 internal import SwiftUI
-import AppIntents
+internal import AppIntents
 #if os(macOS)
 import AppKit
 #endif
 
 @main
 struct MateriaLogApp: App {
-    @State private var store = LogStore()
+    @State private var store = LogStore.shared
     @State private var motion = TiltSource()
     @Environment(\.orbShading) private var sh
     @Environment(\.scenePhase) private var scenePhase

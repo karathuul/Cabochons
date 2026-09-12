@@ -99,7 +99,7 @@
 				Activitystatintent.swift,
 				Intentbridge.swift,
 				Logjewelintent.swift,
-				Materiashortcuts.swift,
+				MateriaShortcuts.swift,
 			);
 			target = 748DB294302CF5B6006C16FD /* Materia */;
 		};

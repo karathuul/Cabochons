@@ -1,5 +1,5 @@
-import AppIntents
-import Foundation
+internal import AppIntents
+internal import Foundation
 
 // MARK: - Entity
 
@@ -41,7 +41,7 @@ struct ActivityQuery: EntityQuery {
     /// ago against an activity since hidden should keep working — hiding
     /// removes forward-looking surfaces, it doesn't delete anything.
     func entities(for identifiers: [UUID]) async throws -> [ActivityEntity] {
-        let all = SharedStorage.load().activities
+        let all = await SharedStorage.load().activities
         return identifiers.compactMap { id in
             all.first { $0.id == id }.map(ActivityEntity.init)
         }
@@ -49,7 +49,7 @@ struct ActivityQuery: EntityQuery {
 
     /// Suggestions exclude hidden activities, matching the app's own lists.
     func suggestedEntities() async throws -> [ActivityEntity] {
-        SharedStorage.load().activities
+        await SharedStorage.load().activities
             .filter { !$0.isHidden }
             .map(ActivityEntity.init)
     }
@@ -68,7 +68,7 @@ extension ActivityQuery: EntityStringQuery {
         let needle = string.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return try await suggestedEntities() }
 
-        return SharedStorage.load().activities
+        return await SharedStorage.load().activities
             .filter { !$0.isHidden }
             .filter { $0.name.localizedCaseInsensitiveContains(needle) }
             .map(ActivityEntity.init)
