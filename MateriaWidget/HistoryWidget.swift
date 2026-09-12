@@ -61,7 +61,7 @@ struct HistoryProvider: AppIntentTimelineProvider {
         let entry = HistoryEntry.build(for: resolve(configuration, in: file), file: file)
 
         // Same policy as the Today widget: the only thing that changes without
-        // an app write is the day rolling over, which adds a new empty square.
+        // an app write is the day rolling over, which adds a new empty socket.
         let calc = DayCalculator(dayStartHour: file.dayStartHour)
         let nextDay = calc.offsetting(calc.today, by: 1)
         let refresh = max(nextDay, entry.date.addingTimeInterval(60 * 60))
@@ -105,8 +105,8 @@ struct HistoryWidgetView: View {
                     }
 
                     // Month labels need horizontal room; the small widget
-                    // spends it on squares instead.
-                    HistoryGridView(
+                    // spends it on orbs instead.
+                    HistoryOrbGrid(
                         history: history,
                         color: color,
                         showsMonths: family != .systemSmall
@@ -121,6 +121,118 @@ struct HistoryWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .containerBackground(for: .widget) { Chrome.panel }
+    }
+}
+
+// MARK: - Orb grid
+
+/// The contribution grid drawn with the app's real jewels.
+///
+/// Same sizing rules as `HistoryGridView`: the cell size comes from the
+/// height (seven rows always fit), then as many weeks as fit the width are
+/// shown, newest at the trailing edge. But the cells are `MateriaSocket` and
+/// `MateriaOrb` views rather than Canvas circles, so the widget reads like a
+/// wall of the app's own sockets. Every cell is under `MateriaOrb.liveThreshold`,
+/// so they all take the static tier — no tilt, no blur passes.
+///
+/// Intensity: an empty day is a bare socket. A logged day is an orb sitting in
+/// that socket, faded in from about half opacity at the day's lowest count to
+/// solid at the busiest count in view. A dim orb in a socket reads as "some",
+/// a bright one as "a lot", without inventing a new colour per level (which
+/// `MateriaColor`'s readability pass would flatten anyway).
+struct HistoryOrbGrid: View {
+    let history: ActivityHistory
+    let color: MateriaColor
+    var showsMonths = true
+    var maxCellSize: CGFloat = 12
+    var gap: CGFloat = 2
+    var calendar: Calendar = .current
+
+    private static let labelBand: CGFloat = 12
+
+    var body: some View {
+        GeometryReader { geo in
+            let band = showsMonths ? Self.labelBand : 0
+            let side = min(maxCellSize, (geo.size.height - band - gap * 6) / 7)
+            let step = side + gap
+
+            if side > 1 {
+                let fit = max(1, Int((geo.size.width + gap) / step))
+                let columns = Array(history.columns.suffix(fit))
+                let gridWidth = CGFloat(columns.count) * step - gap
+                let originX = geo.size.width - gridWidth   // newest week hugs the trailing edge
+
+                ZStack(alignment: .topLeading) {
+                    if showsMonths {
+                        ForEach(monthLabels(for: columns), id: \.column) { label in
+                            let x = originX + CGFloat(label.column) * step
+                            if x + 20 <= geo.size.width {   // don't run off the edge
+                                Text(label.day.formatted(.dateTime.month(.abbreviated)))
+                                    .font(.system(size: 8, weight: .medium, design: .rounded))
+                                    .foregroundStyle(Chrome.steelHi)
+                                    .offset(x: x)
+                            }
+                        }
+                    }
+
+                    HStack(alignment: .top, spacing: gap) {
+                        ForEach(columns.indices, id: \.self) { c in
+                            VStack(spacing: gap) {
+                                ForEach(columns[c], id: \.day) { cell in
+                                    self.cell(cell, side: side)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(.top, band)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cell(_ cell: ActivityHistory.Cell, side: CGFloat) -> some View {
+        ZStack {
+            MateriaSocket(size: side)
+            if cell.count > 0 {
+                MateriaOrb(color: color, size: side)
+                    .opacity(intensity(for: cell.count))
+            }
+        }
+        .frame(width: side, height: side)
+    }
+
+    /// 0.5 at count 1, 1.0 at the busiest day shown. Four steps, like the
+    /// Canvas ramp, so a grid of near-identical days doesn't shimmer with
+    /// meaningless half-percent differences.
+    private func intensity(for count: Int) -> Double {
+        guard history.maxCount > 1 else { return 1 }
+        let level = min(4, 1 + (count - 1) * 4 / history.maxCount)   // 1...4
+        return 0.5 + Double(level - 1) * (0.5 / 3)
+    }
+
+    // MARK: Month labels
+
+    private struct MonthLabel {
+        let column: Int
+        let day: Date
+    }
+
+    /// One label per column whose first day starts a new month, skipping the
+    /// very first column unless it happens to start one — a label on a
+    /// mid-month leading edge just says where the widget was cut.
+    private func monthLabels(for columns: [[ActivityHistory.Cell]]) -> [MonthLabel] {
+        var labels: [MonthLabel] = []
+        var lastMonth: Int?
+        for (c, column) in columns.enumerated() {
+            guard let first = column.first else { continue }
+            let month = calendar.component(.month, from: first.day)
+            defer { lastMonth = month }
+            guard let previous = lastMonth, previous != month else { continue }
+            labels.append(MonthLabel(column: c, day: first.day))
+        }
+        return labels
     }
 }
 
@@ -139,7 +251,7 @@ struct HistoryWidget: Widget {
                 .preferredColorScheme(.dark)
         }
         .configurationDisplayName("History")
-        .description("A year of jewels for one activity, one square per day.")
+        .description("A year of jewels for one activity, one orb per day.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

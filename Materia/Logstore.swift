@@ -5,7 +5,7 @@ internal import SwiftUI
 import AppIntents
 
 @Observable
-final class LogStore {
+final class LogStore : Observable {
 
     static let shared = LogStore()
     
