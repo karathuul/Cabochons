@@ -14,7 +14,7 @@
 		74C9833E3052882900929C84 /* HistoryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9833D3052882500929C84 /* HistoryWidget.swift */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
-		74E5ADB13043E4E7007B24DB /* MateriaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		74E5ADB13043E4E7007B24DB /* CabochonsWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		74E5ADDF3043F74F007B24DB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 74E5ADD73043F74F007B24DB /* Assets.xcassets */; };
 		74E5ADE13043F74F007B24DB /* Materiaprovider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADD93043F74F007B24DB /* Materiaprovider.swift */; };
 		74E5ADE23043F74F007B24DB /* MateriaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDA3043F74F007B24DB /* MateriaWidgetBundle.swift */; };
@@ -53,7 +53,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				74E5ADB13043E4E7007B24DB /* MateriaWidget.appex in Embed Foundation Extensions */,
+				74E5ADB13043E4E7007B24DB /* CabochonsWidget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -61,17 +61,17 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		748DB295302CF5B6006C16FD /* Materia.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Materia.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		748DB295302CF5B6006C16FD /* Cabochons.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cabochons.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		74C9833130512D0500929C84 /* Dataexport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataexport.swift; sourceTree = "<group>"; };
 		74C98338305287B400929C84 /* ActivityHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityHistory.swift; sourceTree = "<group>"; };
 		74C9833B3052880400929C84 /* HistoryWidgetIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWidgetIntent.swift; sourceTree = "<group>"; };
 		74C9833D3052882500929C84 /* HistoryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWidget.swift; sourceTree = "<group>"; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
-		74E5AD753040B1E2007B24DB /* MateriaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MateriaWidgetExtension.entitlements; sourceTree = "<group>"; };
-		74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MateriaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		74E5AD753040B1E2007B24DB /* CabochonsWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CabochonsWidgetExtension.entitlements; sourceTree = "<group>"; };
+		74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CabochonsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74E5ADD73043F74F007B24DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		74E5ADD83043F74F007B24DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		74E5ADD83043F74F007B24DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = CabochonsWidget/Info.plist; sourceTree = SOURCE_ROOT; };
 		74E5ADD93043F74F007B24DB /* Materiaprovider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Materiaprovider.swift; sourceTree = "<group>"; };
 		74E5ADDA3043F74F007B24DB /* MateriaWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MateriaWidgetBundle.swift; sourceTree = "<group>"; };
 		74E5ADDB3043F74F007B24DB /* MateriaWidgetControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MateriaWidgetControl.swift; sourceTree = "<group>"; };
@@ -82,9 +82,9 @@
 		74E5ADE93043FAF4007B24DB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		74E5ADEA3043FAF4007B24DB /* Dayview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dayview.swift; sourceTree = "<group>"; };
 		74E5ADEB3043FAF4007B24DB /* Logstore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logstore.swift; sourceTree = "<group>"; };
-		74E5ADEC3043FAF4007B24DB /* Materia.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Materia.entitlements; sourceTree = "<group>"; };
+		74E5ADEC3043FAF4007B24DB /* Cabochons.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Cabochons.entitlements; sourceTree = "<group>"; };
 		74E5ADED3043FAF4007B24DB /* MateriaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MateriaApp.swift; sourceTree = "<group>"; };
-		74E5ADEE3043FAF4007B24DB /* MateriaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MateriaDebug.entitlements; sourceTree = "<group>"; };
+		74E5ADEE3043FAF4007B24DB /* CabochonsDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CabochonsDebug.entitlements; sourceTree = "<group>"; };
 		74E5ADEF3043FAF4007B24DB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		74E5ADF03043FAF4007B24DB /* Sharedstorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sharedstorage.swift; sourceTree = "<group>"; };
 		74E5ADF13043FAF4007B24DB /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
@@ -92,25 +92,25 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Materia" target */ = {
+		74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Cabochons" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Activityentity.swift,
 				Activitystatintent.swift,
+				CabochonsShortcuts.swift,
 				Intentbridge.swift,
 				Logjewelintent.swift,
-				MateriaShortcuts.swift,
 			);
-			target = 748DB294302CF5B6006C16FD /* Materia */;
+			target = 748DB294302CF5B6006C16FD /* Cabochons */;
 		};
-		74C9833430512DCC00929C84 /* Exceptions for "OrbGraphics" folder in "MateriaWidget" target */ = {
+		74C9833430512DCC00929C84 /* Exceptions for "OrbGraphics" folder in "CabochonsWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Components.swift,
 				OrbShading.swift,
 				TiltSource.swift,
 			);
-			target = 74E5AD9F3043E4E5007B24DB /* MateriaWidget */;
+			target = 74E5AD9F3043E4E5007B24DB /* CabochonsWidget */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -118,7 +118,7 @@
 		74302E1330494DA200586E16 /* Intents */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Materia" target */,
+				74302E1B3049508700586E16 /* Exceptions for "Intents" folder in "Cabochons" target */,
 			);
 			path = Intents;
 			sourceTree = "<group>";
@@ -126,7 +126,7 @@
 		74C9833330512DB600929C84 /* OrbGraphics */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				74C9833430512DCC00929C84 /* Exceptions for "OrbGraphics" folder in "MateriaWidget" target */,
+				74C9833430512DCC00929C84 /* Exceptions for "OrbGraphics" folder in "CabochonsWidget" target */,
 			);
 			path = OrbGraphics;
 			sourceTree = "<group>";
@@ -157,9 +157,8 @@
 			isa = PBXGroup;
 			children = (
 				74302E1330494DA200586E16 /* Intents */,
-				74E5AD753040B1E2007B24DB /* MateriaWidgetExtension.entitlements */,
-				74E5ADF33043FAF4007B24DB /* Materia */,
-				74E5ADDE3043F74F007B24DB /* MateriaWidget */,
+				74E5ADF33043FAF4007B24DB /* Cabochons */,
+				74E5ADDE3043F74F007B24DB /* CabochonsWidget */,
 				74E5AD5D30409D4D007B24DB /* Frameworks */,
 				748DB296302CF5B6006C16FD /* Products */,
 			);
@@ -168,8 +167,8 @@
 		748DB296302CF5B6006C16FD /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				748DB295302CF5B6006C16FD /* Materia.app */,
-				74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */,
+				748DB295302CF5B6006C16FD /* Cabochons.app */,
+				74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -183,7 +182,7 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		74E5ADDE3043F74F007B24DB /* MateriaWidget */ = {
+		74E5ADDE3043F74F007B24DB /* CabochonsWidget */ = {
 			isa = PBXGroup;
 			children = (
 				74C9833D3052882500929C84 /* HistoryWidget.swift */,
@@ -196,37 +195,38 @@
 				74E5ADDC3043F74F007B24DB /* MateriaWidgetLiveActivity.swift */,
 				74E5ADDD3043F74F007B24DB /* MateriaWidgetViews.swift */,
 			);
-			path = MateriaWidget;
+			path = CabochonsWidget;
 			sourceTree = "<group>";
 		};
-		74E5ADF33043FAF4007B24DB /* Materia */ = {
+		74E5ADF33043FAF4007B24DB /* Cabochons */ = {
 			isa = PBXGroup;
 			children = (
 				74C98338305287B400929C84 /* ActivityHistory.swift */,
 				74C9833330512DB600929C84 /* OrbGraphics */,
 				74C9833130512D0500929C84 /* Dataexport.swift */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
-				74E5ADEC3043FAF4007B24DB /* Materia.entitlements */,
+				74E5ADEC3043FAF4007B24DB /* Cabochons.entitlements */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
 				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
 				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
 				74E5ADEB3043FAF4007B24DB /* Logstore.swift */,
 				74E5ADED3043FAF4007B24DB /* MateriaApp.swift */,
-				74E5ADEE3043FAF4007B24DB /* MateriaDebug.entitlements */,
+				74E5ADEE3043FAF4007B24DB /* CabochonsDebug.entitlements */,
 				74E5ADEF3043FAF4007B24DB /* Models.swift */,
 				74E5ADF03043FAF4007B24DB /* Sharedstorage.swift */,
 				74E5ADF13043FAF4007B24DB /* Sheets.swift */,
 				74E5ADF23043FAF4007B24DB /* Stats.swift */,
+				74E5AD753040B1E2007B24DB /* CabochonsWidgetExtension.entitlements */,
 			);
-			path = Materia;
+			path = Cabochons;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		748DB294302CF5B6006C16FD /* Materia */ = {
+		748DB294302CF5B6006C16FD /* Cabochons */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 748DB2A0302CF5BA006C16FD /* Build configuration list for PBXNativeTarget "Materia" */;
+			buildConfigurationList = 748DB2A0302CF5BA006C16FD /* Build configuration list for PBXNativeTarget "Cabochons" */;
 			buildPhases = (
 				748DB291302CF5B6006C16FD /* Sources */,
 				748DB292302CF5B6006C16FD /* Frameworks */,
@@ -241,16 +241,16 @@
 			fileSystemSynchronizedGroups = (
 				74C9833330512DB600929C84 /* OrbGraphics */,
 			);
-			name = Materia;
+			name = Cabochons;
 			packageProductDependencies = (
 			);
 			productName = Materia;
-			productReference = 748DB295302CF5B6006C16FD /* Materia.app */;
+			productReference = 748DB295302CF5B6006C16FD /* Cabochons.app */;
 			productType = "com.apple.product-type.application";
 		};
-		74E5AD9F3043E4E5007B24DB /* MateriaWidget */ = {
+		74E5AD9F3043E4E5007B24DB /* CabochonsWidget */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 74E5ADB33043E4E8007B24DB /* Build configuration list for PBXNativeTarget "MateriaWidget" */;
+			buildConfigurationList = 74E5ADB33043E4E8007B24DB /* Build configuration list for PBXNativeTarget "CabochonsWidget" */;
 			buildPhases = (
 				74E5AD9C3043E4E5007B24DB /* Sources */,
 				74E5AD9D3043E4E5007B24DB /* Frameworks */,
@@ -260,11 +260,11 @@
 			);
 			dependencies = (
 			);
-			name = MateriaWidget;
+			name = CabochonsWidget;
 			packageProductDependencies = (
 			);
 			productName = MateriaWidgetExtension;
-			productReference = 74E5ADA03043E4E5007B24DB /* MateriaWidget.appex */;
+			productReference = 74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -285,7 +285,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 748DB290302CF5B6006C16FD /* Build configuration list for PBXProject "Materia" */;
+			buildConfigurationList = 748DB290302CF5B6006C16FD /* Build configuration list for PBXProject "Cabochons" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -299,8 +299,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				748DB294302CF5B6006C16FD /* Materia */,
-				74E5AD9F3043E4E5007B24DB /* MateriaWidget */,
+				748DB294302CF5B6006C16FD /* Cabochons */,
+				74E5AD9F3043E4E5007B24DB /* CabochonsWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -366,7 +366,7 @@
 /* Begin PBXTargetDependency section */
 		74E5ADB03043E4E7007B24DB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 74E5AD9F3043E4E5007B24DB /* MateriaWidget */;
+			target = 74E5AD9F3043E4E5007B24DB /* CabochonsWidget */;
 			targetProxy = 74E5ADAF3043E4E7007B24DB /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -496,7 +496,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Materia/MateriaDebug.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Cabochons/CabochonsDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V9L6B62T27;
@@ -534,7 +534,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Materia/Materia.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Cabochons/Cabochons.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V9L6B62T27;
@@ -572,12 +572,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = MateriaWidgetExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Cabochons/CabochonsWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V9L6B62T27;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MateriaWidget/Info.plist;
+				INFOPLIST_FILE = CabochonsWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = MateriaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -586,7 +586,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = kitty.beautiful.Materia.MateriaWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = kitty.beautiful.Cabochons;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -603,12 +603,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = MateriaWidgetExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Cabochons/CabochonsWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V9L6B62T27;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = MateriaWidget/Info.plist;
+				INFOPLIST_FILE = CabochonsWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = MateriaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -617,7 +617,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = kitty.beautiful.Materia.MateriaWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = kitty.beautiful.Cabochons;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -632,7 +632,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		748DB290302CF5B6006C16FD /* Build configuration list for PBXProject "Materia" */ = {
+		748DB290302CF5B6006C16FD /* Build configuration list for PBXProject "Cabochons" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				748DB29E302CF5BA006C16FD /* Debug */,
@@ -641,7 +641,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		748DB2A0302CF5BA006C16FD /* Build configuration list for PBXNativeTarget "Materia" */ = {
+		748DB2A0302CF5BA006C16FD /* Build configuration list for PBXNativeTarget "Cabochons" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				748DB2A1302CF5BA006C16FD /* Debug */,
@@ -650,7 +650,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		74E5ADB33043E4E8007B24DB /* Build configuration list for PBXNativeTarget "MateriaWidget" */ = {
+		74E5ADB33043E4E8007B24DB /* Build configuration list for PBXNativeTarget "CabochonsWidget" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				74E5ADB43043E4E8007B24DB /* Debug */,

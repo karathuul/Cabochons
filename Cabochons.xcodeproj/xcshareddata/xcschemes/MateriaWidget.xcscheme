@@ -17,9 +17,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "74E5AD9F3043E4E5007B24DB"
-               BuildableName = "MateriaWidget.appex"
-               BlueprintName = "MateriaWidget"
-               ReferencedContainer = "container:Materia.xcodeproj">
+               BuildableName = "CabochonsWidget.appex"
+               BlueprintName = "CabochonsWidget"
+               ReferencedContainer = "container:Cabochons.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -31,9 +31,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-               BuildableName = "Materia.app"
-               BlueprintName = "Materia"
-               ReferencedContainer = "container:Materia.xcodeproj">
+               BuildableName = "Cabochons.app"
+               BlueprintName = "Cabochons"
+               ReferencedContainer = "container:Cabochons.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -58,16 +58,26 @@
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2"
       queueDebuggingEnableBacktraceRecording = "Yes">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.springboard">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "74E5AD9F3043E4E5007B24DB"
+            BuildableName = "CabochonsWidget.appex"
+            BlueprintName = "CabochonsWidget"
+            ReferencedContainer = "container:Cabochons.xcodeproj">
+         </BuildableReference>
+      </RemoteRunnable>
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-            BuildableName = "Materia.app"
-            BlueprintName = "Materia"
-            ReferencedContainer = "container:Materia.xcodeproj">
+            BuildableName = "Cabochons.app"
+            BlueprintName = "Cabochons"
+            ReferencedContainer = "container:Cabochons.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"
@@ -98,9 +108,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-            BuildableName = "Materia.app"
-            BlueprintName = "Materia"
-            ReferencedContainer = "container:Materia.xcodeproj">
+            BuildableName = "Cabochons.app"
+            BlueprintName = "Cabochons"
+            ReferencedContainer = "container:Cabochons.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

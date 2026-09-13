@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.kral.Materia</string>
+		<string>group.kitty.beautiful.Cabochons</string>
 	</array>
 </dict>
 </plist>
