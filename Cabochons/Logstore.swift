@@ -227,6 +227,12 @@ final class LogStore : Observable {
         WidgetCenter.shared.reloadAllTimelines()
         MateriaShortcuts.updateAppShortcutParameters()
     }
+    
+    func replaceContents(with file: LogFile) {
+        dayStartHour = file.dayStartHour
+        activities = file.activities
+        save()
+    }
 
     /// Chronological across all activities, so it matches the day rail's order.
     func exportCSV() -> String {

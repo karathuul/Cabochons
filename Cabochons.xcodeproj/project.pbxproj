@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		74C9833230512D0D00929C84 /* Dataexport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9833130512D0500929C84 /* Dataexport.swift */; };
 		74C98339305287BB00929C84 /* ActivityHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C98338305287B400929C84 /* ActivityHistory.swift */; };
 		74C9833A305287DF00929C84 /* ActivityHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C98338305287B400929C84 /* ActivityHistory.swift */; };
 		74C9833C3052880A00929C84 /* HistoryWidgetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9833B3052880400929C84 /* HistoryWidgetIntent.swift */; };
 		74C9833E3052882900929C84 /* HistoryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C9833D3052882500929C84 /* HistoryWidget.swift */; };
+		74CF364D30584BDF00694277 /* Dataexport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74CF364A30584BDF00694277 /* Dataexport.swift */; };
+		74CF364E30584BDF00694277 /* Dataimport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74CF364B30584BDF00694277 /* Dataimport.swift */; };
+		74CF365030584DF100694277 /* Datasheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74CF364F30584DEE00694277 /* Datasheet.swift */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* CabochonsWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -62,10 +64,12 @@
 
 /* Begin PBXFileReference section */
 		748DB295302CF5B6006C16FD /* Cabochons.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cabochons.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		74C9833130512D0500929C84 /* Dataexport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataexport.swift; sourceTree = "<group>"; };
 		74C98338305287B400929C84 /* ActivityHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityHistory.swift; sourceTree = "<group>"; };
 		74C9833B3052880400929C84 /* HistoryWidgetIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWidgetIntent.swift; sourceTree = "<group>"; };
 		74C9833D3052882500929C84 /* HistoryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWidget.swift; sourceTree = "<group>"; };
+		74CF364A30584BDF00694277 /* Dataexport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataexport.swift; sourceTree = "<group>"; };
+		74CF364B30584BDF00694277 /* Dataimport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataimport.swift; sourceTree = "<group>"; };
+		74CF364F30584DEE00694277 /* Datasheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Datasheet.swift; sourceTree = "<group>"; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		74E5AD753040B1E2007B24DB /* CabochonsWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CabochonsWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -173,6 +177,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		74CF364C30584BDF00694277 /* DataLoads */ = {
+			isa = PBXGroup;
+			children = (
+				74CF364A30584BDF00694277 /* Dataexport.swift */,
+				74CF364B30584BDF00694277 /* Dataimport.swift */,
+			);
+			path = DataLoads;
+			sourceTree = "<group>";
+		};
 		74E5AD5D30409D4D007B24DB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -201,9 +214,10 @@
 		74E5ADF33043FAF4007B24DB /* Cabochons */ = {
 			isa = PBXGroup;
 			children = (
+				74CF364F30584DEE00694277 /* Datasheet.swift */,
+				74CF364C30584BDF00694277 /* DataLoads */,
 				74C98338305287B400929C84 /* ActivityHistory.swift */,
 				74C9833330512DB600929C84 /* OrbGraphics */,
-				74C9833130512D0500929C84 /* Dataexport.swift */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74E5ADEC3043FAF4007B24DB /* Cabochons.entitlements */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
@@ -330,12 +344,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				74E5ADF43043FAF4007B24DB /* Activitydetailview.swift in Sources */,
+				74CF365030584DF100694277 /* Datasheet.swift in Sources */,
 				74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */,
 				74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */,
 				74E5ADF83043FAF4007B24DB /* Logstore.swift in Sources */,
+				74CF364D30584BDF00694277 /* Dataexport.swift in Sources */,
+				74CF364E30584BDF00694277 /* Dataimport.swift in Sources */,
 				74E5ADF93043FAF4007B24DB /* MateriaApp.swift in Sources */,
 				74E5ADFA3043FAF4007B24DB /* Models.swift in Sources */,
-				74C9833230512D0D00929C84 /* Dataexport.swift in Sources */,
 				74E5ADFB3043FAF4007B24DB /* Sharedstorage.swift in Sources */,
 				74E5ADFC3043FAF4007B24DB /* Sheets.swift in Sources */,
 				74E5ADFD3043FAF4007B24DB /* Stats.swift in Sources */,
