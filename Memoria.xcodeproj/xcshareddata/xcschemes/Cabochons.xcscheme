@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-               BuildableName = "Cabochons.app"
-               BlueprintName = "Cabochons"
-               ReferencedContainer = "container:Cabochons.xcodeproj">
+               BuildableName = "Memoria.app"
+               BlueprintName = "Memoria"
+               ReferencedContainer = "container:Memoria.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,9 +46,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-            BuildableName = "Cabochons.app"
-            BlueprintName = "Cabochons"
-            ReferencedContainer = "container:Cabochons.xcodeproj">
+            BuildableName = "Memoria.app"
+            BlueprintName = "Memoria"
+            ReferencedContainer = "container:Memoria.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -63,9 +63,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-            BuildableName = "Cabochons.app"
-            BlueprintName = "Cabochons"
-            ReferencedContainer = "container:Cabochons.xcodeproj">
+            BuildableName = "Memoria.app"
+            BlueprintName = "Memoria"
+            ReferencedContainer = "container:Memoria.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -225,7 +225,7 @@ final class LogStore : Observable {
         // Read-only widgets show today's progress, so every write is a chance
         // for them to be stale. Cheap to ask for a refresh; WidgetKit coalesces.
         WidgetCenter.shared.reloadAllTimelines()
-        MateriaShortcuts.updateAppShortcutParameters()
+        MemoriaShortcuts.updateAppShortcutParameters()
     }
     
     func replaceContents(with file: LogFile) {

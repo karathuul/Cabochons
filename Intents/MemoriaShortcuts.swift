@@ -9,7 +9,7 @@ internal import AppIntents
 ///   the whole provider at build time otherwise, not just the bad phrase.
 /// - Ten App Shortcuts maximum per app. Everything beyond that is still
 ///   available as an action in the Shortcuts editor; it just isn't pre-made.
-struct MateriaShortcuts: AppShortcutsProvider {
+struct MemoriaShortcuts: AppShortcutsProvider {
 
     /// Tints the Spotlight and Shortcuts tiles. Purple is closest to the
     /// gunmetal-and-orb look the app itself uses.

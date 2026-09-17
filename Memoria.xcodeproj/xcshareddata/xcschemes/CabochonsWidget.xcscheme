@@ -17,9 +17,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "74E5AD9F3043E4E5007B24DB"
-               BuildableName = "CabochonsWidget.appex"
-               BlueprintName = "CabochonsWidget"
-               ReferencedContainer = "container:Cabochons.xcodeproj">
+               BuildableName = "MemoriaWidget.appex"
+               BlueprintName = "MemoriaWidget"
+               ReferencedContainer = "container:Memoria.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -31,9 +31,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-               BuildableName = "Cabochons.app"
-               BlueprintName = "Cabochons"
-               ReferencedContainer = "container:Cabochons.xcodeproj">
+               BuildableName = "Memoria.app"
+               BlueprintName = "Memoria"
+               ReferencedContainer = "container:Memoria.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -63,9 +63,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-            BuildableName = "Cabochons.app"
-            BlueprintName = "Cabochons"
-            ReferencedContainer = "container:Cabochons.xcodeproj">
+            BuildableName = "Memoria.app"
+            BlueprintName = "Memoria"
+            ReferencedContainer = "container:Memoria.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -81,9 +81,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "748DB294302CF5B6006C16FD"
-            BuildableName = "Cabochons.app"
-            BlueprintName = "Cabochons"
-            ReferencedContainer = "container:Cabochons.xcodeproj">
+            BuildableName = "Memoria.app"
+            BlueprintName = "Memoria"
+            ReferencedContainer = "container:Memoria.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
