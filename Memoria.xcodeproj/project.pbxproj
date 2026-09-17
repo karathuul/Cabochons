@@ -14,8 +14,6 @@
 		74CF364D30584BDF00694277 /* Dataexport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74CF364A30584BDF00694277 /* Dataexport.swift */; };
 		74CF364E30584BDF00694277 /* Dataimport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74CF364B30584BDF00694277 /* Dataimport.swift */; };
 		74CF365030584DF100694277 /* Datasheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74CF364F30584DEE00694277 /* Datasheet.swift */; };
-		74D254C4305B8E5100DFFAF3 /* Info 2.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74D254C3305B8E5100DFFAF3 /* Info 2.plist */; };
-		74D254C6305B8E5800DFFAF3 /* Info 3.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74D254C5305B8E5800DFFAF3 /* Info 3.plist */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* MemoriaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* MemoriaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -72,11 +70,11 @@
 		74CF364A30584BDF00694277 /* Dataexport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataexport.swift; sourceTree = "<group>"; };
 		74CF364B30584BDF00694277 /* Dataimport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dataimport.swift; sourceTree = "<group>"; };
 		74CF364F30584DEE00694277 /* Datasheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Datasheet.swift; sourceTree = "<group>"; };
-		74D254C3305B8E5100DFFAF3 /* Info 2.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info 2.plist"; sourceTree = "<group>"; };
-		74D254C5305B8E5800DFFAF3 /* Info 3.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info 3.plist"; sourceTree = "<group>"; };
+		74D254DE305BA44300DFFAF3 /* MemoriaWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MemoriaWidget.entitlements; sourceTree = "<group>"; };
+		74D254DF305BA45800DFFAF3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		74D254F5305BA47A00DFFAF3 /* Memoria.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Memoria.entitlements; sourceTree = "<group>"; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
-		74E5AD753040B1E2007B24DB /* MemoriaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MemoriaWidgetExtension.entitlements; sourceTree = "<group>"; };
 		74E5ADA03043E4E5007B24DB /* MemoriaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MemoriaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74E5ADD73043F74F007B24DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		74E5ADD93043F74F007B24DB /* Materiaprovider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Materiaprovider.swift; sourceTree = "<group>"; };
@@ -89,9 +87,7 @@
 		74E5ADE93043FAF4007B24DB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		74E5ADEA3043FAF4007B24DB /* Dayview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dayview.swift; sourceTree = "<group>"; };
 		74E5ADEB3043FAF4007B24DB /* Logstore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logstore.swift; sourceTree = "<group>"; };
-		74E5ADEC3043FAF4007B24DB /* Memoria.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Memoria.entitlements; sourceTree = "<group>"; };
 		74E5ADED3043FAF4007B24DB /* MateriaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MateriaApp.swift; sourceTree = "<group>"; };
-		74E5ADEE3043FAF4007B24DB /* MemoriaDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MemoriaDebug.entitlements; sourceTree = "<group>"; };
 		74E5ADEF3043FAF4007B24DB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		74E5ADF03043FAF4007B24DB /* Sharedstorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sharedstorage.swift; sourceTree = "<group>"; };
 		74E5ADF13043FAF4007B24DB /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
@@ -201,6 +197,7 @@
 		74E5ADDE3043F74F007B24DB /* MemoriaWidget */ = {
 			isa = PBXGroup;
 			children = (
+				74D254DE305BA44300DFFAF3 /* MemoriaWidget.entitlements */,
 				74C9833D3052882500929C84 /* HistoryWidget.swift */,
 				74C9833B3052880400929C84 /* HistoryWidgetIntent.swift */,
 				74E5ADD73043F74F007B24DB /* Assets.xcassets */,
@@ -209,8 +206,6 @@
 				74E5ADDB3043F74F007B24DB /* MateriaWidgetControl.swift */,
 				74E5ADDC3043F74F007B24DB /* MateriaWidgetLiveActivity.swift */,
 				74E5ADDD3043F74F007B24DB /* MateriaWidgetViews.swift */,
-				74D254C3305B8E5100DFFAF3 /* Info 2.plist */,
-				74D254C5305B8E5800DFFAF3 /* Info 3.plist */,
 			);
 			path = MemoriaWidget;
 			sourceTree = "<group>";
@@ -218,23 +213,22 @@
 		74E5ADF33043FAF4007B24DB /* Memoria */ = {
 			isa = PBXGroup;
 			children = (
+				74D254F5305BA47A00DFFAF3 /* Memoria.entitlements */,
+				74D254DF305BA45800DFFAF3 /* Info.plist */,
 				74CF364F30584DEE00694277 /* Datasheet.swift */,
 				74CF364C30584BDF00694277 /* DataLoads */,
 				74C98338305287B400929C84 /* ActivityHistory.swift */,
 				74C9833330512DB600929C84 /* OrbGraphics */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
-				74E5ADEC3043FAF4007B24DB /* Memoria.entitlements */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
 				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
 				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
 				74E5ADEB3043FAF4007B24DB /* Logstore.swift */,
 				74E5ADED3043FAF4007B24DB /* MateriaApp.swift */,
-				74E5ADEE3043FAF4007B24DB /* MemoriaDebug.entitlements */,
 				74E5ADEF3043FAF4007B24DB /* Models.swift */,
 				74E5ADF03043FAF4007B24DB /* Sharedstorage.swift */,
 				74E5ADF13043FAF4007B24DB /* Sheets.swift */,
 				74E5ADF23043FAF4007B24DB /* Stats.swift */,
-				74E5AD753040B1E2007B24DB /* MemoriaWidgetExtension.entitlements */,
 			);
 			path = Memoria;
 			sourceTree = "<group>";
@@ -336,8 +330,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				74D254C4305B8E5100DFFAF3 /* Info 2.plist in Resources */,
-				74D254C6305B8E5800DFFAF3 /* Info 3.plist in Resources */,
 				74E5ADDF3043F74F007B24DB /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -527,6 +519,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Memoria/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -565,6 +558,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Memoria/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -594,7 +588,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = Memoria/MemoriaWidgetExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MemoriaWidget/MemoriaWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V9L6B62T27;
@@ -625,7 +619,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = Memoria/MemoriaWidgetExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = MemoriaWidget/MemoriaWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V9L6B62T27;

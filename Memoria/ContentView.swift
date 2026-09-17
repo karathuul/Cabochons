@@ -132,7 +132,7 @@ struct ContentView: View {
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(Chrome.panel)
-        .navigationTitle("Materia")
+        .navigationTitle("Memoria")
         #if os(macOS)
         .frame(minWidth: 250)
         #endif

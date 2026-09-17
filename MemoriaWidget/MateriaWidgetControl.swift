@@ -12,7 +12,7 @@ import WidgetKit
 struct MateriaWidgetControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
-            kind: "kitty.beautiful.Materia.MateriaWidget",
+            kind: "kitty.beautiful.Memoria.MemoriaWidget",
             provider: Provider()
         ) { value in
             ControlWidgetToggle(

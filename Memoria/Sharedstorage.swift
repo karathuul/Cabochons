@@ -27,7 +27,7 @@ struct LogFile: Codable {
 /// Both `LogStore` (read/write) and the widget (read-only) go through here, so
 /// there's a single source of truth for the location and the JSON settings.
 enum SharedStorage {
-    static let fileName = "cabochons.json"
+    static let fileName = "memoria.json"
 
     /// The folder holding the data file: the App Group container when it's
     /// configured, otherwise the app's own Application Support. The fallback

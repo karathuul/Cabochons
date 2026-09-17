@@ -11,7 +11,7 @@ struct LogJewelIntent: AppIntent {
     static var description = IntentDescription(
         "Slots one or more jewels into an activity and returns its new count for today.",
         categoryName: "Logging",
-        searchKeywords: ["materia", "jewel", "habit", "track", "tally", "count"]
+        searchKeywords: ["memoria", "jewel", "habit", "track", "tally", "count"]
     )
 
     /// False on purpose: an automation that yanks you into the app every time

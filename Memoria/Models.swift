@@ -330,11 +330,11 @@ struct MateriaColor: Codable, Hashable {
     static let independent = MateriaColor(hue: 0.7669, saturation: 0.5804, brightness: 1.0)
 
     static let presets: [MateriaPreset] = [
-        MateriaPreset(name: "Magic", color: .magic),
-        MateriaPreset(name: "Summon", color: .summon),
-        MateriaPreset(name: "Support", color: .support),
-        MateriaPreset(name: "Command", color: .command),
-        MateriaPreset(name: "Independent", color: .independent)
+        MateriaPreset(name: "Earth", color: .magic),
+        MateriaPreset(name: "Water", color: .support),
+        MateriaPreset(name: "Fire", color: .summon),
+        MateriaPreset(name: "Gold", color: .command),
+        MateriaPreset(name: "Magic", color: .independent)
     ]
 
     /// Preset name if this matches one, otherwise the hex value.
