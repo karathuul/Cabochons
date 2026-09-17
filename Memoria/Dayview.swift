@@ -162,7 +162,7 @@ struct DayView: View {
     /// anything useful about a monthly commitment, so this does.
     @ViewBuilder
     private func duePanel(_ stats: CombinedStats) -> some View {
-        let outstanding = stats.progress.filter { !$0.cadence.isDaily }
+        let outstanding = stats.progress.filter { !$0.cadence.isDaily && !$0.isOpenEnded }
 
         if !outstanding.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -324,7 +324,7 @@ private struct ActivityButton: View {
                     .font(.system(.caption, design: .rounded, weight: .medium))
                     .lineLimit(1)
 
-                Text("\(progress.count)/\(progress.target)")
+                Text(progress.isOpenEnded ? "\(progress.count)" : "\(progress.count)/\(progress.target)")
                     .font(.caption2)
                     .monospacedDigit()
                     .foregroundStyle(progress.isMet ? Chrome.gold : .secondary)

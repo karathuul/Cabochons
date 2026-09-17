@@ -52,6 +52,8 @@ struct ActivityStats {
     var periods: [PeriodSummary] = []
 
     var currentCount: Int { current?.count ?? 0 }
+    /// No target, no sockets. Mirrors `Activity.isOpenEnded`.
+    var isOpenEnded: Bool { target == 0 }
 
     var average: Double {
         periodsLogged == 0 ? 0 : Double(total) / Double(periodsLogged)
@@ -100,6 +102,7 @@ struct PeriodProgress: Identifiable, Hashable {
     var fills: [RailJewel] = []
 
     var id: UUID { activityID }
+    var isOpenEnded: Bool { target == 0 }
     var isMet: Bool { target > 0 && count >= target }
     var remaining: Int { max(0, target - count) }
 }

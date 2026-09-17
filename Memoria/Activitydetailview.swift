@@ -151,7 +151,11 @@ struct ActivityDetailView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(periodTitle(stats))
                         .font(.system(.headline, design: .rounded, weight: .semibold))
-                    if !stats.cadence.isDaily {
+                    if stats.isOpenEnded {
+                        Text("whenever")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if !stats.cadence.isDaily {
                         Text("\(stats.target) every \(stats.cadence.phrase)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -165,10 +169,12 @@ struct ActivityDetailView: View {
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(activity.color.core)
-                    Text("/ \(stats.target)")
-                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                    if !stats.isOpenEnded {
+                        Text("/ \(stats.target)")
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
@@ -186,7 +192,7 @@ struct ActivityDetailView: View {
                 )
                 .font(.system(.caption, design: .rounded, weight: .semibold))
                 .foregroundStyle(Chrome.gold)
-            } else if let current, !stats.cadence.isDaily {
+            } else if let current, !stats.isOpenEnded, !stats.cadence.isDaily {
                 let days = max(0, store.calc.daysBetween(store.calc.today, current.end))
                 Text("\(current.remaining) to go · \(days) \(days == 1 ? "day" : "days") left")
                     .font(.system(.caption, design: .rounded))
@@ -245,13 +251,17 @@ struct ActivityDetailView: View {
             .accessibilityHint("Long press to log with a note")
 
             VStack(alignment: .leading, spacing: 10) {
-                StreakBadge(
-                    streak: stats.currentStreak,
-                    today: stats.currentCount,
-                    accent: activity.color.core,
-                    unit: stats.cadence.unit.label(count: 2)
-                )
-                .fixedSize(horizontal: false, vertical: true)
+                // A streak is a target in disguise; open-ended activities
+                // don't get one.
+                if !stats.isOpenEnded {
+                    StreakBadge(
+                        streak: stats.currentStreak,
+                        today: stats.currentCount,
+                        accent: activity.color.core,
+                        unit: stats.cadence.unit.label(count: 2)
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+                }
 
                 // Stacked, not side by side: the orb is a fixed 152pt, so on a
                 // phone the remaining column is too narrow for two bordered
@@ -297,10 +307,14 @@ struct ActivityDetailView: View {
         ) {
             let unit = stats.cadence.unit.label(count: 2)
             StatTile(label: "Total", value: "\(stats.total)")
-            StatTile(label: "Streak", value: "\(stats.currentStreak)", unit: unit)
-            StatTile(label: "Longest", value: "\(stats.longestStreak)", unit: unit)
+            if !stats.isOpenEnded {
+                StatTile(label: "Streak", value: "\(stats.currentStreak)", unit: unit)
+                StatTile(label: "Longest", value: "\(stats.longestStreak)", unit: unit)
+            }
             StatTile(label: "Logged", value: "\(stats.periodsLogged)", unit: unit)
-            StatTile(label: "Mastered", value: "\(stats.periodsMet)", unit: unit)
+            if !stats.isOpenEnded {
+                StatTile(label: "Mastered", value: "\(stats.periodsMet)", unit: unit)
+            }
             StatTile(label: "Average", value: String(format: "%.1f", stats.average))
         }
         .panel()

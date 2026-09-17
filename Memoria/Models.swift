@@ -85,6 +85,7 @@ struct Activity: Identifiable, Codable, Hashable {
     var color: MateriaColor
     /// Sockets per period.
     var target: Int
+    var isOpenEnded: Bool { target == 0 }
     var cadence: Cadence = .daily
     var jewels: [Jewel] = []
     var createdAt: Date = .now

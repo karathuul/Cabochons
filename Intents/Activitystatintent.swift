@@ -25,7 +25,7 @@ enum MateriaStat: String, AppEnum {
         .total:  DisplayRepresentation(title: "Total jewels",
                                        subtitle: "All time"),
         .target: DisplayRepresentation(title: "Target",
-                                       subtitle: "Jewels needed per period")
+                                       subtitle: "Memoria goal per period")
     ]
 }
 
@@ -64,7 +64,7 @@ struct ActivityStatIntent: AppIntent {
         case .period: dialog = "\(value) this period."
         case .streak: dialog = "\(value) periods."
         case .total:  dialog = "\(value) all time."
-        case .target: dialog = "\(value) per period."
+        case .target: dialog = value == 0 ? "No target — whenever." : "\(value) per period."
         }
 
         return .result(value: value, dialog: dialog)

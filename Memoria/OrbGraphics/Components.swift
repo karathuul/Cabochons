@@ -350,7 +350,7 @@ struct SlotRail: View {
         guard total > 0 else { return [] }
         return (0..<total).map { index in
             index < fills.count
-                ? .filled(fills[index], overflow: index >= capacity)
+                ? .filled(fills[index], overflow: capacity > 0 && index >= capacity)
                 : .empty
         }
     }

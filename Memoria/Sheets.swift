@@ -20,9 +20,27 @@ struct ActivityEditor: View {
     @State private var target = 4
     @State private var cadenceCount = 1
     @State private var cadenceUnit: Cadence.Unit = .day
+    
+    enum Schedule: String, CaseIterable, Identifiable {
+        case scheduled = "On a schedule", whenever = "Whenever"
+        var id: String { rawValue }
+    }
+    @State private var schedule: Schedule = .scheduled
 
     private var cadence: Cadence {
         Cadence(count: cadenceCount, unit: cadenceUnit)
+    }
+
+    /// What actually gets written. The stepper always holds a real number;
+    /// "whenever" is the one place a target of 0 is produced.
+    private var savedTarget: Int {
+        schedule == .whenever ? 0 : target
+    }
+
+    /// Open-ended activities are bucketed by day. Leaving a weekly cadence on
+    /// one would drop it into the "This period" list with nothing to say.
+    private var savedCadence: Cadence {
+        schedule == .whenever ? .daily : cadence
     }
 
     private var sentence: String {
@@ -39,7 +57,10 @@ struct ActivityEditor: View {
         if case .edit(let activity) = mode {
             _name = State(initialValue: activity.name)
             _color = State(initialValue: activity.color)
-            _target = State(initialValue: activity.target)
+            // The stepper's range starts at 1, so an open-ended activity's 0
+            // is expressed through `schedule` and the stepper keeps a sane seed.
+            _schedule = State(initialValue: activity.isOpenEnded ? .whenever : .scheduled)
+            _target = State(initialValue: max(1, activity.target))
             _cadenceCount = State(initialValue: activity.cadence.count)
             _cadenceUnit = State(initialValue: activity.cadence.unit)
             _picked = State(initialValue: activity.color.core)
@@ -120,45 +141,57 @@ struct ActivityEditor: View {
             VStack(alignment: .leading, spacing: 10) {
                 FieldLabel("How often")
 
-                HStack(spacing: 10) {
-                    Stepper(value: $target, in: 1...40) {
-                        Text("\(target)")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
-                            .monospacedDigit()
-                            .frame(minWidth: 26, alignment: .leading)
-                    }
-                    .fixedSize()
+                Picker("", selection: $schedule) {
+                    ForEach(Schedule.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
 
-                    Text("every")
-                        .font(.system(.body, design: .rounded))
-                        .foregroundStyle(.secondary)
-
-                    Stepper(value: $cadenceCount, in: 1...30) {
-                        Text("\(cadenceCount)")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
-                            .monospacedDigit()
-                            .frame(minWidth: 26, alignment: .leading)
-                    }
-                    .fixedSize()
-
-                    Picker("", selection: $cadenceUnit) {
-                        ForEach(Cadence.Unit.allCases) { unit in
-                            Text(unit.label(count: cadenceCount)).tag(unit)
+                if schedule == .scheduled {
+                    HStack(spacing: 10) {
+                        Stepper(value: $target, in: 1...40) {
+                            Text("\(target)")
+                                .font(.system(.body, design: .rounded, weight: .semibold))
+                                .monospacedDigit()
+                                .frame(minWidth: 26, alignment: .leading)
                         }
+                        .fixedSize()
+
+                        Text("every")
+                            .font(.system(.body, design: .rounded))
+                            .foregroundStyle(.secondary)
+
+                        Stepper(value: $cadenceCount, in: 1...30) {
+                            Text("\(cadenceCount)")
+                                .font(.system(.body, design: .rounded, weight: .semibold))
+                                .monospacedDigit()
+                                .frame(minWidth: 26, alignment: .leading)
+                        }
+                        .fixedSize()
+
+                        Picker("", selection: $cadenceUnit) {
+                            ForEach(Cadence.Unit.allCases) { unit in
+                                Text(unit.label(count: cadenceCount)).tag(unit)
+                            }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
                     }
-                    .labelsHidden()
-                    .fixedSize()
+                    Text(sentence)
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                        .foregroundStyle(color.core)
+
+                    SlotRail(count: 0, color: color, capacity: target, size: 18, maxSlots: 40)
+
+                    Text("Fill every socket to master the \(cadence.phrase). Extra jewels are kept and marked gold.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("No sockets, no target. Every tap is just a jewel.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
-                Text(sentence)
-                    .font(.system(.caption, design: .rounded, weight: .medium))
-                    .foregroundStyle(color.core)
-
-                SlotRail(count: 0, color: color, capacity: target, size: 18, maxSlots: 40)
-
-                Text("Fill every socket to master the \(cadence.phrase). Extra jewels are kept and marked gold.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 0)
@@ -189,13 +222,13 @@ struct ActivityEditor: View {
 
         switch mode {
         case .create:
-            onSave(Activity(name: trimmed, color: color, target: target, cadence: cadence))
+            onSave(Activity(name: trimmed, color: color, target: savedTarget, cadence: savedCadence))
         case .edit(let existing):
             var updated = existing
             updated.name = trimmed
             updated.color = color
-            updated.target = target
-            updated.cadence = cadence
+            updated.target = savedTarget
+            updated.cadence = savedCadence
             onSave(updated)
         }
         dismiss()
