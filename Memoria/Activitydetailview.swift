@@ -10,6 +10,9 @@ struct ActivityDetailView: View {
     @State private var inspecting: PeriodSummary?
     @State private var noting: LoggedJewel?
     @State private var editing = false
+    
+    @State private var confirmingDelete = false
+    var onDelete: (() -> Void)? = nil
 
     private var activity: Activity? { store.activity(activityID) }
 
@@ -42,6 +45,14 @@ struct ActivityDetailView: View {
                             )
                         }
                     }
+                    if activity?.isHidden == true {
+                        Divider()
+                        Button(role: .destructive) {
+                            confirmingDelete = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 } label: {
                     Label("Options", systemImage: "slider.horizontal.3")
                 }
@@ -65,6 +76,19 @@ struct ActivityDetailView: View {
                 ),
                 activityID: activityID
             )
+        }
+        .confirmationDialog(
+            "Delete \(activity?.name ?? "activity")?",
+            isPresented: $confirmingDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Delete \(activity?.jewels.count ?? 0) jewels", role: .destructive) {
+                onDelete?()
+                store.delete(activityID)
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure? All history of this memoria will be lost.")
         }
     }
 

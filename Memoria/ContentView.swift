@@ -26,7 +26,7 @@ struct ContentView: View {
                 DayView()
             case .activity(let id):
                 if store.activity(id) != nil {
-                    ActivityDetailView(activityID: id).id(id)
+                    ActivityDetailView(activityID: id, onDelete: { selection = .day }).id(id)
                 } else {
                     DayView()
                 }
