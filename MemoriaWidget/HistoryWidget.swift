@@ -101,6 +101,7 @@ struct HistoryWidgetView: View {
                                 .font(.system(.caption2, design: .rounded, weight: .medium))
                                 .monospacedDigit()
                                 .foregroundStyle(Chrome.gold)
+                                .widgetAccentable()   // no-op in full colour; takes the tint when accented
                         }
                     }
 
@@ -148,6 +149,10 @@ struct HistoryOrbGrid: View {
     var gap: CGFloat = 2
     var calendar: Calendar = .current
 
+    /// Home Screen tinting. `.accented` throws away colour and keeps only
+    /// alpha, so the real socket and orb views are swapped for `TintedCell`.
+    @Environment(\.widgetRenderingMode) private var renderingMode
+
     private static let labelBand: CGFloat = 12
 
     var body: some View {
@@ -193,14 +198,18 @@ struct HistoryOrbGrid: View {
 
     @ViewBuilder
     private func cell(_ cell: ActivityHistory.Cell, side: CGFloat) -> some View {
-        ZStack {
-            MateriaSocket(size: side)
-            if cell.count > 0 {
-                MateriaOrb(color: color, size: side)
-                    .opacity(intensity(for: cell.count))
+        if renderingMode == .accented {
+            TintedCell(filled: cell.count > 0, intensity: intensity(for: cell.count), side: side)
+        } else {
+            ZStack {
+                MateriaSocket(size: side)
+                if cell.count > 0 {
+                    MateriaOrb(color: color, size: side)
+                        .opacity(intensity(for: cell.count))
+                }
             }
+            .frame(width: side, height: side)
         }
-        .frame(width: side, height: side)
     }
 
     /// 0.5 at count 1, 1.0 at the busiest day shown. Four steps, like the
@@ -236,6 +245,37 @@ struct HistoryOrbGrid: View {
     }
 }
 
+// MARK: - Tinted cell
+
+/// One grid cell under Home Screen tinting.
+///
+/// Accented mode discards colour and keeps only alpha, so `MateriaSocket`
+/// (opaque well, opaque ring) and `MateriaOrb` collapse into the same solid
+/// disc — every day looked logged. Here the two states differ in shape, not
+/// colour: a logged day is a solid disc marked accentable, so it takes the
+/// user's tint and dims with intensity; an empty day is a thin ring left
+/// unaccented, so the system draws it in its muted primary treatment.
+private struct TintedCell: View {
+    let filled: Bool
+    let intensity: Double
+    let side: CGFloat
+
+    var body: some View {
+        Group {
+            if filled {
+                Circle()
+                    .fill(.white)            // colour is irrelevant here; only alpha survives
+                    .opacity(intensity)
+                    .widgetAccentable()
+            } else {
+                Circle()
+                    .strokeBorder(.white.opacity(0.35), lineWidth: max(1, side * 0.1))
+            }
+        }
+        .frame(width: side, height: side)
+    }
+}
+
 // MARK: - Widget
 
 struct HistoryWidget: Widget {
@@ -267,5 +307,16 @@ struct HistoryWidget: Widget {
     HistoryWidget()
 } timeline: {
     HistoryEntry.placeholder
+}
+
+// Flips the layout branch only. The actual colour-stripping happens in the
+// system compositor, so this shows white discs and rings, not the tint —
+// check the real thing on device with a tinted Home Screen.
+#Preview("Accented (layout only)") {
+    HistoryWidgetView(entry: .placeholder)
+        .environment(\.widgetRenderingMode, .accented)
+        .frame(width: 329, height: 155)
+        .background(Chrome.panel)
+        .preferredColorScheme(.dark)
 }
 #endif

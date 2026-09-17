@@ -594,7 +594,7 @@
 				DEVELOPMENT_TEAM = V9L6B62T27;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CabochonsWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = CabochonsWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = MemoriaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -625,7 +625,7 @@
 				DEVELOPMENT_TEAM = V9L6B62T27;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CabochonsWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = CabochonsWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = MemoriaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

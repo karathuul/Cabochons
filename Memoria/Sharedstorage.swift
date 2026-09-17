@@ -11,7 +11,7 @@ internal import Foundation
 /// match in all three places (here and both entitlements) exactly, or the
 /// container URL comes back nil and the widget falls back to an empty read.
 enum AppGroup {
-    static let identifier = "kitty.beautiful.Cabochons"
+    static let identifier = "group.kitty.beautiful.Cabochons"
 }
 
 /// On-disk shape. Versioned so the format can change later without guessing.
@@ -27,7 +27,7 @@ struct LogFile: Codable {
 /// Both `LogStore` (read/write) and the widget (read-only) go through here, so
 /// there's a single source of truth for the location and the JSON settings.
 enum SharedStorage {
-    static let fileName = "materialog.json"
+    static let fileName = "cabochons.json"
 
     /// The folder holding the data file: the App Group container when it's
     /// configured, otherwise the app's own Application Support. The fallback
@@ -47,7 +47,7 @@ enum SharedStorage {
                 create: true
             )) ?? URL.documentsDirectory
         }
-        return base.appendingPathComponent("MateriaLog", isDirectory: true)
+        return base.appendingPathComponent("Cabochons", isDirectory: true)
     }
 
     static var fileURL: URL {
@@ -99,7 +99,7 @@ enum SharedStorage {
         ) else { return }
 
         let legacy = appSupport
-            .appendingPathComponent("MateriaLog", isDirectory: true)
+            .appendingPathComponent("Cabochons", isDirectory: true)
             .appendingPathComponent(fileName)
 
         // If the group isn't configured, destination == legacy and this is a
