@@ -1,5 +1,36 @@
 internal import Foundation
 
+
+// MARK: - Weekday affinity
+
+/// How jewels spread across the week, corrected for how many of each weekday
+/// the activity has actually lived through. `rate` is the number you show.
+struct WeekdayProfile: Hashable {
+    struct Entry: Identifiable, Hashable {
+        /// Calendar weekday: 1 = Sunday … 7 = Saturday.
+        let weekday: Int
+        let count: Int
+        /// Occurrences of this weekday from creation day through today, inclusive.
+        let opportunities: Int
+
+        var id: Int { weekday }
+        /// Jewels per occurrence. Can exceed 1 for multi-target activities.
+        var rate: Double { opportunities == 0 ? 0 : Double(count) / Double(opportunities) }
+    }
+
+    /// Always seven, Sunday through Saturday.
+    let entries: [Entry]
+
+    var total: Int { entries.reduce(0) { $0 + $1.count } }
+    var best: Entry? { entries.filter { $0.count > 0 }.max { $0.rate < $1.rate } }
+
+    /// Same seven entries rotated to start on the user's first weekday.
+    func ordered(firstWeekday: Int) -> [Entry] {
+        let start = max(0, min(6, firstWeekday - 1))
+        return Array(entries[start...] + entries[..<start])
+    }
+}
+
 // MARK: - A jewel with its provenance attached
 
 /// A jewel plus the activity that produced it. The combined day rail mixes
@@ -270,6 +301,54 @@ enum Stats {
             daysRemaining: max(0, calc.daysBetween(calc.today, end)),
             fills: inPeriod.map { RailJewel(activity.color, hasNote: $0.hasNote) }
         )
+    }
+    
+    // MARK: Weekday affinity
+
+    static func weekdayProfile(for activity: Activity, calc: DayCalculator) -> WeekdayProfile {
+        weekdayProfile(
+            timestamps: activity.jewels.map(\.timestamp),
+            since: activity.createdAt,
+            calc: calc
+        )
+    }
+
+    /// Every activity on one profile. Opportunities run from the oldest
+    /// activity's creation, since that's when the app started asking anything.
+    static func weekdayProfile(activities: [Activity], calc: DayCalculator) -> WeekdayProfile {
+        weekdayProfile(
+            timestamps: activities.flatMap { $0.jewels.map(\.timestamp) },
+            since: activities.map(\.createdAt).min() ?? calc.today,
+            calc: calc
+        )
+    }
+
+    private static func weekdayProfile(
+        timestamps: [Date],
+        since start: Date,
+        calc: DayCalculator
+    ) -> WeekdayProfile {
+        // Index by weekday directly; slot 0 is unused.
+        var counts = [Int](repeating: 0, count: 8)
+        for timestamp in timestamps {
+            counts[calc.weekday(for: timestamp)] += 1
+        }
+
+        // How many of each weekday fall in [creation day, today]?
+        let firstDay = calc.day(for: start)
+        let firstWeekday = calc.weekday(for: firstDay)
+        let daysLived = max(0, calc.daysBetween(firstDay, calc.today)) + 1
+
+        let entries = (1...7).map { weekday -> WeekdayProfile.Entry in
+            let offset = (weekday - firstWeekday + 7) % 7   // days until first occurrence
+            let occurrences = offset < daysLived ? (daysLived - offset + 6) / 7 : 0
+            return WeekdayProfile.Entry(
+                weekday: weekday,
+                count: counts[weekday],
+                opportunities: occurrences
+            )
+        }
+        return WeekdayProfile(entries: entries)
     }
 
     // MARK: Streaks

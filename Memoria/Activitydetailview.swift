@@ -106,6 +106,9 @@ struct ActivityDetailView: View {
                 slotPanel(activity: activity, stats: stats)
                 tapRow(activity: activity, stats: stats)
                 statsPanel(stats)
+                if !activity.jewels.isEmpty {
+                    weekdayPanel(activity: activity)
+                }
                 history(activity: activity, stats: stats)
             }
             .padding(20)
@@ -318,6 +321,60 @@ struct ActivityDetailView: View {
             StatTile(label: "Average", value: String(format: "%.1f", stats.average))
         }
         .panel()
+    }
+    
+    // MARK: Weekday affinity
+
+    private func weekdayPanel(activity: Activity) -> some View {
+        let profile = Stats.weekdayProfile(for: activity, calc: store.calc)
+        let calendar = Calendar.current
+        let entries = profile.ordered(firstWeekday: calendar.firstWeekday)
+        let peak = entries.map(\.rate).max() ?? 0
+        let bestWeekday = profile.best?.weekday
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("By weekday")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+
+                Spacer()
+
+                if let best = profile.best {
+                    Text("\(calendar.standaloneWeekdaySymbols[best.weekday - 1])s · \(best.count) of \(best.opportunities)")
+                        .font(.system(.caption, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(entries) { entry in
+                    let isBest = entry.weekday == bestWeekday
+                    VStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(isBest ? activity.color.core : Chrome.steel.opacity(0.45))
+                            .frame(height: barHeight(entry.rate, peak: peak))
+                            .frame(height: 56, alignment: .bottom)
+                            .accessibilityLabel(
+                                "\(calendar.standaloneWeekdaySymbols[entry.weekday - 1]): \(entry.count) of \(entry.opportunities)"
+                            )
+
+                        Text(calendar.veryShortStandaloneWeekdaySymbols[entry.weekday - 1])
+                            .font(.system(.caption2, design: .rounded, weight: isBest ? .semibold : .regular))
+                            .foregroundStyle(isBest ? .primary : .secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .panel()
+    }
+
+    /// Bars scale against the busiest day, not against 1.0 — a multi-target
+    /// activity can exceed one jewel per weekday and the bar would clip.
+    private func barHeight(_ rate: Double, peak: Double) -> CGFloat {
+        guard peak > 0 else { return 3 }
+        return max(3, 56 * CGFloat(rate / peak))
     }
 
     // MARK: History

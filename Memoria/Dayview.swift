@@ -28,13 +28,14 @@ struct DayView: View {
         .background(Chrome.panel.ignoresSafeArea())
         .navigationTitle("Today")
         .sensoryFeedback(.impact(weight: .medium), trigger: pulse)
-        .toolbar {
-            ToolbarItem {
-                ShareLink(item: store.exportCSV()) {
-                    Label("Export CSV", systemImage: "square.and.arrow.up")
-                }
-            }
-        }
+        //TODO share from here?
+//        .toolbar {
+//            ToolbarItem {
+//                ShareLink(item: store.exportCSV()) {
+//                    Label("Export CSV", systemImage: "square.and.arrow.up")
+//                }
+//            }
+//        }
         .sheet(item: $inspecting) { day in
             DayEntriesSheet(day: day.day, capacity: day.capacity)
         }

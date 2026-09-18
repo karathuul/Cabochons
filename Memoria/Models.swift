@@ -460,6 +460,10 @@ struct DayCalculator {
         default: return day.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
         }
     }
+    
+    func weekday(for date: Date) -> Int {
+        calendar.component(.weekday, from: date)
+    }
 
     // MARK: Periods
 
