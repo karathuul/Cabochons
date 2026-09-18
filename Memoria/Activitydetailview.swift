@@ -108,6 +108,7 @@ struct ActivityDetailView: View {
                 statsPanel(stats)
                 if !activity.jewels.isEmpty {
                     weekdayPanel(activity: activity)
+                    hourPanel(activity: activity)
                 }
                 history(activity: activity, stats: stats)
             }
@@ -375,6 +376,60 @@ struct ActivityDetailView: View {
     private func barHeight(_ rate: Double, peak: Double) -> CGFloat {
         guard peak > 0 else { return 3 }
         return max(3, 56 * CGFloat(rate / peak))
+    }
+    
+    // MARK: Hour affinity
+
+    private func hourPanel(activity: Activity) -> some View {
+        let profile = Stats.hourProfile(for: activity, calc: store.calc)
+        let window = profile.busiestWindow()
+        let peak = Double(profile.peak)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("By hour")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+
+                Spacer()
+
+                if let window {
+                    Text("\(hourLabel(window.start))–\(hourLabel(window.end)) · \(window.count) of \(profile.total)")
+                        .font(.system(.caption, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(alignment: .bottom, spacing: 3) {
+                ForEach(0..<24, id: \.self) { hour in
+                    let inWindow = window?.contains(hour) ?? false
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(inWindow ? activity.color.core : Chrome.steel.opacity(0.45))
+                        .frame(height: barHeight(Double(profile.counts[hour]), peak: peak))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56, alignment: .bottom)
+                        .accessibilityLabel("\(hourLabel(hour)): \(profile.counts[hour])")
+                }
+            }
+
+            // Four labels spread across the row land close enough to their
+            // bars; exact alignment isn't worth a GeometryReader.
+            HStack(spacing: 0) {
+                ForEach([0, 6, 12, 18], id: \.self) { hour in
+                    Text(hourLabel(hour))
+                        .font(.system(.caption2, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .panel()
+    }
+
+    /// Locale-aware: "6 PM" for 12-hour users, "18" for everyone else.
+    private func hourLabel(_ hour: Int) -> String {
+        let date = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: .now) ?? .now
+        return date.formatted(.dateTime.hour())
     }
 
     // MARK: History

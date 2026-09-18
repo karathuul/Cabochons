@@ -350,6 +350,61 @@ enum Stats {
         }
         return WeekdayProfile(entries: entries)
     }
+    
+    // MARK: Hour affinity
+
+    static func hourProfile(for activity: Activity, calc: DayCalculator) -> HourProfile {
+        hourProfile(timestamps: activity.jewels.map(\.timestamp), calc: calc)
+    }
+
+    static func hourProfile(activities: [Activity], calc: DayCalculator) -> HourProfile {
+        hourProfile(timestamps: activities.flatMap { $0.jewels.map(\.timestamp) }, calc: calc)
+    }
+
+    private static func hourProfile(timestamps: [Date], calc: DayCalculator) -> HourProfile {
+        var counts = [Int](repeating: 0, count: 24)
+        for timestamp in timestamps {
+            counts[calc.hour(for: timestamp)] += 1
+        }
+        return HourProfile(counts: counts)
+    }
+    
+    // MARK: - Hour affinity
+
+    /// Jewels by hour of day. No opportunity correction — every day has every
+    /// hour — so counts are the truth here. Reflects when you logged, not when
+    /// you did the thing; batch-loggers will get a batch-logging chart.
+    struct HourProfile: Hashable {
+        /// Index is the hour, 0…23.
+        let counts: [Int]
+
+        struct Window: Hashable {
+            let start: Int
+            let width: Int
+            let count: Int
+            /// Exclusive, wrapped.
+            var end: Int { (start + width) % 24 }
+            func contains(_ hour: Int) -> Bool {
+                (0..<width).contains { (start + $0) % 24 == hour }
+            }
+        }
+
+        var total: Int { counts.reduce(0, +) }
+        var peak: Int { counts.max() ?? 0 }
+
+        /// The busiest run of `width` consecutive hours, allowed to cross midnight.
+        func busiestWindow(width: Int = 2) -> Window? {
+            guard total > 0 else { return nil }
+            var best: Window?
+            for start in 0..<24 {
+                let count = (0..<width).reduce(0) { $0 + counts[(start + $1) % 24] }
+                if count > (best?.count ?? -1) {
+                    best = Window(start: start, width: width, count: count)
+                }
+            }
+            return best
+        }
+    }
 
     // MARK: Streaks
 

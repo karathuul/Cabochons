@@ -464,6 +464,10 @@ struct DayCalculator {
     func weekday(for date: Date) -> Int {
         calendar.component(.weekday, from: date)
     }
+    
+    func hour(for date: Date) -> Int {
+        calendar.component(.hour, from: date)
+    }
 
     // MARK: Periods
 
