@@ -41,7 +41,10 @@ struct MateriaEntry: TimelineEntry {
         capacity: 4,
         streak: 5,
         fills: [
-            RailJewel(.magic), RailJewel(.summon, hasNote: true), RailJewel(.support)
+            RailJewel(.magic),
+            // Long enough to show a real flare, not the "ok" minimum.
+            RailJewel(.summon, note: "Finally got the tempo right on the second movement, twice in a row."),
+            RailJewel(.support)
         ],
         progress: [],
         hasActivities: true

@@ -151,24 +151,26 @@ final class LogStore : Observable {
         save()
     }
 
-    /// The whole point of the app.
+    /// The whole point of the app. Notes arriving here (Siri, Shortcuts) get
+    /// the same trim-and-clamp as ones typed in the editor.
     @discardableResult
     func slot(_ id: Activity.ID, at date: Date = .now, note: String? = nil) -> Bool {
         guard let index = activities.firstIndex(where: { $0.id == id }) else { return false }
-        activities[index].jewels.append(Jewel(timestamp: date, note: note))
+        activities[index].jewels.append(Jewel(timestamp: date, note: NoteRules.normalized(note)))
         save()
         return true
     }
 
     /// Blank or whitespace-only clears the note rather than storing an empty
-    /// string, so `hasNote` and the tag can't disagree.
+    /// string, so `hasNote` and the tag can't disagree. Over-long text is cut
+    /// at `NoteRules.limit` — the editor should already prevent that, this is
+    /// the backstop.
     func setNote(_ text: String, for jewel: Jewel.ID, in id: Activity.ID) {
         guard let activityIndex = activities.firstIndex(where: { $0.id == id }),
               let jewelIndex = activities[activityIndex].jewels.firstIndex(where: { $0.id == jewel })
         else { return }
 
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        activities[activityIndex].jewels[jewelIndex].note = trimmed.isEmpty ? nil : trimmed
+        activities[activityIndex].jewels[jewelIndex].note = NoteRules.normalized(text)
         save()
     }
 

@@ -345,7 +345,7 @@ private struct EntryList: View {
                             MateriaOrb(
                                 color: entry.color,
                                 size: 18,
-                                hasNote: entry.hasNote,
+                                glint: NoteRules.glint(for: entry.note),
                                 glow: 0.6
                             )
                             .padding(.top, 1)
@@ -434,7 +434,10 @@ struct NoteEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
-                MateriaOrb(color: entry.color, size: 30, hasNote: entry.hasNote)
+                // Flares as you type. This is the whole lure: watch the gem
+                // catch more light the more you actually say.
+                MateriaOrb(color: entry.color, size: 30, glint: NoteRules.glint(for: text))
+                    .animation(.easeOut(duration: 0.25), value: NoteRules.glint(for: text))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.activityName)
@@ -462,10 +465,28 @@ struct NoteEditor: View {
                 }
                 .frame(minHeight: 140)
                 .focused($focused)
+                .onChange(of: text) { _, new in
+                    // Editor-side stop. The store clamps too, so this is only
+                    // about not letting you type past the line.
+                    if new.count > NoteRules.limit {
+                        text = String(new.prefix(NoteRules.limit))
+                    }
+                }
 
-            Text("Anything worth remembering about this one. Jewels with a note get a tag.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Anything worth remembering about this one. The more you write, the brighter it flares.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 12)
+
+                Text("\(text.count)/\(NoteRules.limit)")
+                    .font(.system(.caption2, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(text.count >= NoteRules.limit
+                                     ? AnyShapeStyle(Chrome.gold)
+                                     : AnyShapeStyle(.tertiary))
+            }
 
             HStack {
                 if entry.hasNote {

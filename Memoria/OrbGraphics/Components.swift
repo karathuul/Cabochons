@@ -6,11 +6,46 @@ internal import SwiftUI
 /// now that a jewel can carry a note.
 struct RailJewel: Hashable {
     var color: MateriaColor
-    var hasNote: Bool = false
+    /// 0 = no note. Anything above is how hard the glint flares.
+    var glint: CGFloat = 0
 
-    init(_ color: MateriaColor, hasNote: Bool = false) {
+    var hasNote: Bool { glint > 0 }
+
+    init(_ color: MateriaColor, note: String? = nil) {
         self.color = color
-        self.hasNote = hasNote
+        self.glint = NoteRules.glint(for: note)
+    }
+}
+
+// MARK: - Note rules
+
+/// The one place that decides what a note is worth. Store, editor, and orb all
+/// read from here so the cap and the flare can't drift apart.
+enum NoteRules {
+    /// Hard ceiling on note length, in characters. The store truncates on the
+    /// way in; the editor stops you typing past it.
+    static let limit = 300
+
+    /// Full flare arrives well short of the cap. A real sentence or two should
+    /// already earn it; the last hundred-odd characters are for people who
+    /// like writing, not a hurdle everyone has to clear.
+    static let saturation = 160
+
+    /// Trim, then clamp. Blank becomes nil so `hasNote` and the tag agree.
+    static func normalized(_ text: String?) -> String? {
+        guard let text else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(limit))
+    }
+
+    /// 0 for no note, otherwise 0.35…1. Square root so growth is front-loaded:
+    /// "ok" barely glints, forty characters is already a clear step up, and
+    /// the curve flattens as you approach `saturation`.
+    static func glint(for note: String?) -> CGFloat {
+        guard let note, !note.isEmpty else { return 0 }
+        let t = min(1, Double(note.count) / Double(saturation))
+        return CGFloat(0.35 + 0.65 * t.squareRoot())
     }
 }
 
@@ -34,8 +69,9 @@ struct MateriaOrb: View {
     var size: CGFloat = 30
     /// Jewels past the day's capacity get a gold rim and a star.
     var overflow: Bool = false
-    /// Something worth writing about happened.
-    var hasNote: Bool = false
+    /// Something worth writing about happened. 0 = nothing; otherwise how
+    /// hard the note glint flares (see `NoteRules.glint`).
+    var glint: CGFloat = 0
     var glow: CGFloat = 1
 
     /// Orbs this size and up are live. History rails draw at 14; everything
@@ -44,10 +80,10 @@ struct MateriaOrb: View {
 
     var body: some View {
         if size >= Self.liveThreshold {
-            LiveOrb(color: color, size: size, overflow: overflow, hasNote: hasNote, glow: glow)
+            LiveOrb(color: color, size: size, overflow: overflow, glint: glint, glow: glow)
         } else {
             OrbFace(
-                color: color, size: size, overflow: overflow, hasNote: hasNote, glow: glow,
+                color: color, size: size, overflow: overflow, glint: glint, glow: glow,
                 travel: .zero, live: false
             )
         }
@@ -62,7 +98,7 @@ private struct LiveOrb: View {
     let color: MateriaColor
     let size: CGFloat
     let overflow: Bool
-    let hasNote: Bool
+    let glint: CGFloat
     let glow: CGFloat
 
     @AppStorage("shimmerEnabled") private var shimmerEnabled = true
@@ -79,7 +115,7 @@ private struct LiveOrb: View {
 
     var body: some View {
         OrbFace(
-            color: color, size: size, overflow: overflow, hasNote: hasNote, glow: glow,
+            color: color, size: size, overflow: overflow, glint: glint, glow: glow,
             travel: travel, live: true
         )
     }
@@ -92,7 +128,7 @@ private struct OrbFace: View {
     let color: MateriaColor
     let size: CGFloat
     let overflow: Bool
-    let hasNote: Bool
+    let glint: CGFloat
     let glow: CGFloat
     let travel: CGSize
     let live: Bool
@@ -132,8 +168,8 @@ private struct OrbFace: View {
                     .offset(y: size * 0.22)
             }
 
-            if hasNote {
-                NoteGlint(size: size)
+            if glint > 0 {
+                NoteGlint(size: size, strength: glint, travel: travel)
             }
         }
         .compositingGroup()
@@ -274,21 +310,33 @@ struct GlintShape: Shape {
 
 private struct NoteGlint: View {
     let size: CGFloat
+    /// 0.35…1 from `NoteRules.glint`. Longer note, bigger flare — the glint
+    /// is a lure for actually reflecting rather than typing "ok".
+    let strength: CGFloat
+    /// The specular's tilt displacement. The flare rides it so the two stay
+    /// glued; static orbs pass `.zero` and nothing moves.
+    let travel: CGSize
+
+    /// Main flare spans 0.40–0.72 of the orb; the old fixed 0.62 lands at
+    /// roughly a 75-character note, so mid-length notes look as they did.
+    private var coreScale: CGFloat { 0.40 + 0.32 * strength }
+    /// Under-flare grows with it, 0.60–1.0.
+    private var haloScale: CGFloat { 0.60 + 0.40 * strength }
 
     var body: some View {
         ZStack {
             // Soft under-flare.
             GlintShape()
-                .fill(.white.opacity(0.30))
-                .frame(width: size * 0.92, height: size * 0.92)
+                .fill(.white.opacity(0.18 + 0.14 * strength))
+                .frame(width: size * haloScale, height: size * haloScale)
 
             // The glint itself. The faint shadow buys separation on very light
             // gems, where white-on-white would otherwise vanish. At rail size
             // it's half a pixel of shadow for a full render pass, so static
             // orbs go without.
             let glint = GlintShape()
-                .fill(.white.opacity(0.95))
-                .frame(width: size * 0.62, height: size * 0.62)
+                .fill(.white.opacity(0.80 + 0.15 * strength))
+                .frame(width: size * coreScale, height: size * coreScale)
 
             if size >= MateriaOrb.liveThreshold {
                 glint.shadow(color: .black.opacity(0.35), radius: max(0.5, size * 0.02))
@@ -297,15 +345,22 @@ private struct NoteGlint: View {
             }
         }
         .rotationEffect(.degrees(-15))
-        .offset(x: -size * 0.14, y: -size * 0.22)
+        .offset(x: -size * 0.14 + travel.width, y: -size * 0.22 + travel.height)
         .overlay {
             // Secondary reflection, lens-flare style. Only at button scale —
-            // it's noise at rail size.
-            if size >= 24 {
+            // it's noise at rail size — and only once the flare is bright
+            // enough to plausibly throw one. A bare "ok" doesn't.
+            //
+            // Ghosts in a real lens sit on the far side of the optical axis
+            // from the light, so this one slides *against* the tilt while the
+            // flare slides with it. Cheap parallax; sells the glass.
+            if size >= 24, strength >= 0.5 {
                 Circle()
                     .fill(.white.opacity(0.5))
-                    .frame(width: size * 0.10, height: size * 0.10)
-                    .offset(x: size * 0.32, y: size * 0.32)
+                    .frame(width: size * (0.06 + 0.06 * strength),
+                           height: size * (0.06 + 0.06 * strength))
+                    .offset(x: size * 0.32 - travel.width * 0.6,
+                            y: size * 0.32 - travel.height * 0.6)
             }
         }
     }
@@ -366,7 +421,7 @@ struct SlotRail: View {
                         color: jewel.color,
                         size: size,
                         overflow: overflow,
-                        hasNote: jewel.hasNote
+                        glint: jewel.glint
                     )
                 }
             }

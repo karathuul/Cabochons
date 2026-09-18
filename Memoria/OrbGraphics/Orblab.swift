@@ -17,6 +17,9 @@ struct OrbLab: View {
     @State private var motion = TiltSource()
     @State private var swatch = 0
     @State private var showCode = false
+    /// Note-glint strength, 0 = no note. Matches what `NoteRules.glint`
+    /// hands the orb, so you can tune the flare's range without writing notes.
+    @State private var glint: CGFloat = 1
 
     // Swap this for however you actually vend a set of MateriaColors.
     private var colors: [MateriaColor] { [MateriaColor.magic] }
@@ -41,7 +44,7 @@ struct OrbLab: View {
         VStack(spacing: 22) {
             // Drag on the big orb to fake a tilt — the Simulator has no gyro,
             // so this stands in for holding the phone.
-            MateriaOrb(color: color, size: 160, hasNote: true)
+            MateriaOrb(color: color, size: 160, glint: glint)
                 .contentShape(Circle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -61,7 +64,7 @@ struct OrbLab: View {
             // Small sizes are where shading usually falls apart.
             HStack(spacing: 16) {
                 ForEach([12, 18, 24, 30, 44], id: \.self) { s in
-                    MateriaOrb(color: color, size: CGFloat(s))
+                    MateriaOrb(color: color, size: CGFloat(s), glint: glint)
                 }
             }
 
@@ -86,6 +89,9 @@ struct OrbLab: View {
     private var controls: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
+
+                heading("Note glint")
+                slide("strength", $glint, 0...1)
 
                 heading("Body")
                 slide("center x", $sh.bodyCenter.x, 0...1)

@@ -47,7 +47,7 @@ struct LoggedJewel: Identifiable, Hashable {
         !(note ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    var rail: RailJewel { RailJewel(color, hasNote: hasNote) }
+    var rail: RailJewel { RailJewel(color, note: note) }
 }
 
 // MARK: - Per-activity
@@ -185,7 +185,7 @@ enum Stats {
                 end: calc.periodEnd(index: index, cadence: cadence, anchor: anchor),
                 count: jewels.count,
                 target: activity.target,
-                fills: jewels.map { RailJewel(activity.color, hasNote: $0.hasNote) }
+                fills: jewels.map { RailJewel(activity.color, note: $0.note) }
             )
         }
 
@@ -299,7 +299,7 @@ enum Stats {
             cadence: cadence,
             periodLabel: calc.periodLabel(index: index, cadence: cadence, anchor: anchor),
             daysRemaining: max(0, calc.daysBetween(calc.today, end)),
-            fills: inPeriod.map { RailJewel(activity.color, hasNote: $0.hasNote) }
+            fills: inPeriod.map { RailJewel(activity.color, note: $0.note) }
         )
     }
     
