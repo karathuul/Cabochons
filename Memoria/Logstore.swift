@@ -10,6 +10,9 @@ final class LogStore : Observable {
     static let shared = LogStore()
     
     private(set) var activities: [Activity] = []
+    /// Categories laid across activities, in the user's order. Membership is
+    /// on the tag (`Tag.activityIDs`), not the activity.
+    private(set) var tags: [Tag] = []
 
     /// Hour at which a new day begins. 0 = midnight.
     var dayStartHour: Int = 0 {
@@ -41,13 +44,46 @@ final class LogStore : Observable {
         activities.first { $0.id == id }?.name ?? "Deleted"
     }
 
-    func stats(for activity: Activity) -> ActivityStats {
+    func stats(for activity: Activity) -> PeriodStats {
         Stats.compute(for: activity, calc: calc)
     }
 
     /// Every activity folded onto one day rail.
     var combined: CombinedStats {
-        Stats.combine(activities: activities, calc: calc)
+        Stats.combine(activities: activities, tags: tags, calc: calc)
+    }
+
+    // MARK: Tags
+
+    func tag(_ id: Tag.ID?) -> Tag? {
+        guard let id else { return nil }
+        return tags.first { $0.id == id }
+    }
+
+    /// Every tag this activity belongs to, in tag order.
+    func tags(containing id: Activity.ID) -> [Tag] {
+        tags.filter { $0.contains(id) }
+    }
+
+    /// Members that still have a button: visible ones, in sidebar order.
+    func visibleMembers(of tag: Tag) -> [Activity] {
+        visibleActivities.filter { tag.contains($0.id) }
+    }
+
+    func progress(for tag: Tag) -> TagProgress {
+        Stats.progress(for: tag, activities: activities, calc: calc)
+    }
+
+    func stats(for tag: Tag) -> PeriodStats {
+        Stats.compute(for: tag, activities: activities, calc: calc)
+    }
+
+    /// Sockets the day has *for this tag*: daily targets of its visible
+    /// members. Same reasoning as `dailyCapacity`, narrowed.
+    func dailyCapacity(for tag: Tag) -> Int {
+        visibleMembers(of: tag)
+            .filter { $0.cadence.isDaily }
+            .reduce(0) { $0 + $1.target }
     }
 
     /// Sockets the day has, from visible daily activities only. A monthly
@@ -104,6 +140,12 @@ final class LogStore : Observable {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
+    /// Newest first, from a tag's members only. `nil` tag means everything,
+    /// so a scoped and an unscoped day view can share one call.
+    func entries(on day: Date, in tag: Tag?) -> [LoggedJewel] {
+        entries(on: day).filter { tag?.contains($0.activityID) ?? true }
+    }
+
     /// Newest first, for one activity within one turn of its cadence.
     func entries(in period: PeriodSummary, activityID: UUID) -> [LoggedJewel] {
         allEntries()
@@ -141,9 +183,58 @@ final class LogStore : Observable {
         save()
     }
 
+    /// Also prunes the activity from every tag, so no tag carries a dangling
+    /// member ID around forever.
     func delete(_ id: Activity.ID) {
         activities.removeAll { $0.id == id }
+        for index in tags.indices {
+            tags[index].activityIDs.removeAll { $0 == id }
+        }
         save()
+    }
+
+    // MARK: Tag mutation
+
+    func add(_ tag: Tag) {
+        tags.append(tag)
+        save()
+    }
+
+    func update(_ tag: Tag) {
+        guard let index = tags.firstIndex(where: { $0.id == tag.id }) else { return }
+        tags[index] = tag
+        save()
+    }
+
+    /// Deleting a tag loses nothing but the tag: every member's jewels are its
+    /// own and stay put.
+    func delete(tag id: Tag.ID) {
+        tags.removeAll { $0.id == id }
+        save()
+    }
+
+    func moveTags(from source: IndexSet, to destination: Int) {
+        tags.move(fromOffsets: source, toOffset: destination)
+        save()
+    }
+
+    /// Sets exactly which tags one activity belongs to. Used by the activity
+    /// editor, which shows tags as toggles; the source of truth stays on the
+    /// tag, this just writes through.
+    func setTags(_ tagIDs: Set<Tag.ID>, for activityID: Activity.ID) {
+        var changed = false
+        for index in tags.indices {
+            let should = tagIDs.contains(tags[index].id)
+            let does = tags[index].contains(activityID)
+            if should, !does {
+                tags[index].activityIDs.append(activityID)
+                changed = true
+            } else if !should, does {
+                tags[index].activityIDs.removeAll { $0 == activityID }
+                changed = true
+            }
+        }
+        if changed { save() }
     }
 
     func move(from source: IndexSet, to destination: Int) {
@@ -179,6 +270,11 @@ final class LogStore : Observable {
         entries(on: calc.today).first
     }
 
+    /// Same, narrowed to a tag's members. `nil` is the unscoped case.
+    func mostRecentToday(in tag: Tag?) -> LoggedJewel? {
+        entries(on: calc.today, in: tag).first
+    }
+
     func remove(jewel: Jewel.ID, from id: Activity.ID) {
         guard let index = activities.firstIndex(where: { $0.id == id }) else { return }
         activities[index].jewels.removeAll { $0.id == jewel }
@@ -202,6 +298,15 @@ final class LogStore : Observable {
         return true
     }
 
+    /// Undo on a tag-scoped rail should pop the last jewel *on that rail*, not
+    /// whatever was logged most recently anywhere.
+    @discardableResult
+    func removeLastToday(in tag: Tag?) -> Bool {
+        guard let newest = entries(on: calc.today, in: tag).first else { return false }
+        remove(jewel: newest.id, from: newest.activityID)
+        return true
+    }
+
     // MARK: Persistence
 
     /// Guards the didSet on `dayStartHour` from writing during load, when we're
@@ -218,12 +323,13 @@ final class LogStore : Observable {
         defer { isLoading = false }
         let file = SharedStorage.load()
         activities = file.activities
+        tags = file.tags
         dayStartHour = file.dayStartHour
     }
 
     func save() {
         guard !isLoading else { return }
-        SharedStorage.write(LogFile(dayStartHour: dayStartHour, activities: activities))
+        SharedStorage.write(LogFile(dayStartHour: dayStartHour, activities: activities, tags: tags))
         // Read-only widgets show today's progress, so every write is a chance
         // for them to be stale. Cheap to ask for a refresh; WidgetKit coalesces.
         WidgetCenter.shared.reloadAllTimelines()
@@ -233,6 +339,7 @@ final class LogStore : Observable {
     func replaceContents(with file: LogFile) {
         dayStartHour = file.dayStartHour
         activities = file.activities
+        tags = file.tags
         save()
     }
 

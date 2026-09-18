@@ -48,6 +48,27 @@ struct LoggedJewel: Identifiable, Hashable {
     }
 
     var rail: RailJewel { RailJewel(color, note: note) }
+
+    init(id: UUID, timestamp: Date, activityID: UUID, activityName: String, color: MateriaColor, note: String? = nil) {
+        self.id = id
+        self.timestamp = timestamp
+        self.activityID = activityID
+        self.activityName = activityName
+        self.color = color
+        self.note = note
+    }
+
+    /// A jewel stamped with the activity it came from.
+    init(_ jewel: Jewel, of activity: Activity) {
+        self.init(
+            id: jewel.id,
+            timestamp: jewel.timestamp,
+            activityID: activity.id,
+            activityName: activity.name,
+            color: activity.color,
+            note: jewel.note
+        )
+    }
 }
 
 // MARK: - Per-activity
@@ -69,7 +90,10 @@ struct PeriodSummary: Identifiable, Hashable, Equatable {
     var remaining: Int { max(0, target - count) }
 }
 
-struct ActivityStats {
+/// Everything measured against one cadence: totals, streaks, and every period
+/// ever logged. An activity and a tag both produce one of these — the only
+/// difference is whose jewels went in.
+struct PeriodStats {
     var total: Int = 0
     var target: Int = 1
     var cadence: Cadence = .daily
@@ -90,6 +114,9 @@ struct ActivityStats {
         periodsLogged == 0 ? 0 : Double(total) / Double(periodsLogged)
     }
 }
+
+/// The old name. Existing call sites (`ActivityDetailView`) keep compiling.
+typealias ActivityStats = PeriodStats
 
 // MARK: - Combined across all activities
 
@@ -138,6 +165,28 @@ struct PeriodProgress: Identifiable, Hashable {
     var remaining: Int { max(0, target - count) }
 }
 
+/// Where one tag stands in its current period. The tag equivalent of
+/// `PeriodProgress`, with a mixed-colour rail — the rail *is* the breakdown:
+/// you can see which member each jewel came from.
+struct TagProgress: Identifiable, Hashable {
+    let tagID: UUID
+    let name: String
+    let count: Int
+    let target: Int
+    let cadence: Cadence
+    let periodLabel: String
+    let daysRemaining: Int
+    /// Chronological across every member.
+    var fills: [RailJewel] = []
+    /// Members with at least one jewel this period, in sidebar order.
+    var tallies: [ActivityTally] = []
+
+    var id: UUID { tagID }
+    var isMet: Bool { target > 0 && count >= target }
+    var remaining: Int { max(0, target - count) }
+    var overflow: Int { max(0, count - target) }
+}
+
 struct CombinedStats {
     var total: Int = 0
     /// Sum of targets for daily activities only.
@@ -150,6 +199,8 @@ struct CombinedStats {
     var days: [CombinedDay] = []
     var today: CombinedDay?
     var progress: [PeriodProgress] = []
+    /// One per tag, in the user's tag order.
+    var tagProgress: [TagProgress] = []
 
     var todayCount: Int { today?.count ?? 0 }
 
@@ -164,28 +215,66 @@ enum Stats {
 
     // MARK: Single activity
 
-    static func compute(for activity: Activity, calc: DayCalculator) -> ActivityStats {
-        let cadence = activity.cadence
-        let anchor = activity.createdAt
+    static func compute(for activity: Activity, calc: DayCalculator) -> PeriodStats {
+        periodStats(
+            entries: activity.jewels.map { LoggedJewel($0, of: activity) },
+            target: activity.target,
+            cadence: activity.cadence,
+            anchor: activity.createdAt,
+            calc: calc
+        )
+    }
 
-        var byPeriod: [Int: [Jewel]] = [:]
-        for jewel in activity.jewels {
-            let index = calc.periodIndex(for: jewel.timestamp, cadence: cadence, anchor: anchor)
-            byPeriod[index, default: []].append(jewel)
+    // MARK: Single tag
+
+    /// Every member's jewels measured against the tag's own cadence. Hidden
+    /// members still contribute — their jewels were earned — it's only the
+    /// forward-looking surfaces that drop them.
+    static func compute(for tag: Tag, activities: [Activity], calc: DayCalculator) -> PeriodStats {
+        periodStats(
+            entries: entries(of: tag, in: activities),
+            target: tag.target,
+            cadence: tag.cadence,
+            anchor: tag.createdAt,
+            calc: calc
+        )
+    }
+
+    /// Every jewel belonging to a tag's members, unsorted.
+    static func entries(of tag: Tag, in activities: [Activity]) -> [LoggedJewel] {
+        activities
+            .filter { tag.contains($0.id) }
+            .flatMap { activity in activity.jewels.map { LoggedJewel($0, of: activity) } }
+    }
+
+    /// The shared engine. Buckets entries into periods of `cadence` counted
+    /// from `anchor`, then measures each bucket against `target`. Doesn't care
+    /// whether the entries came from one activity or several.
+    private static func periodStats(
+        entries: [LoggedJewel],
+        target: Int,
+        cadence: Cadence,
+        anchor: Date,
+        calc: DayCalculator
+    ) -> PeriodStats {
+        var byPeriod: [Int: [LoggedJewel]] = [:]
+        for entry in entries {
+            let index = calc.periodIndex(for: entry.timestamp, cadence: cadence, anchor: anchor)
+            byPeriod[index, default: []].append(entry)
         }
         let counts = byPeriod.mapValues(\.count)
 
         let currentIndex = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
 
         func summary(_ index: Int) -> PeriodSummary {
-            let jewels = (byPeriod[index] ?? []).sorted { $0.timestamp < $1.timestamp }
+            let inPeriod = (byPeriod[index] ?? []).sorted { $0.timestamp < $1.timestamp }
             return PeriodSummary(
                 index: index,
                 start: calc.periodStart(index: index, cadence: cadence, anchor: anchor),
                 end: calc.periodEnd(index: index, cadence: cadence, anchor: anchor),
-                count: jewels.count,
-                target: activity.target,
-                fills: jewels.map { RailJewel(activity.color, note: $0.note) }
+                count: inPeriod.count,
+                target: target,
+                fills: inPeriod.map(\.rail)
             )
         }
 
@@ -196,9 +285,9 @@ enum Stats {
         let summaries = indices.sorted(by: >).map(summary)
         let met = Set(summaries.filter(\.isMet).map(\.index))
 
-        var stats = ActivityStats()
-        stats.total = activity.jewels.count
-        stats.target = activity.target
+        var stats = PeriodStats()
+        stats.total = entries.count
+        stats.target = target
         stats.cadence = cadence
         stats.periodsLogged = counts.count
         stats.periodsMet = met.count
@@ -212,7 +301,7 @@ enum Stats {
 
     // MARK: All activities on one rail
 
-    static func combine(activities: [Activity], calc: DayCalculator) -> CombinedStats {
+    static func combine(activities: [Activity], tags: [Tag] = [], calc: DayCalculator) -> CombinedStats {
         // Only daily activities can define a day's sockets. A monthly activity
         // owes you nothing in particular today, so folding its target into a
         // daily capacity would invent a debt that doesn't exist. Hidden ones
@@ -276,7 +365,40 @@ enum Stats {
         stats.progress = activities
             .filter { !$0.isHidden }
             .map { progress(for: $0, calc: calc) }
+        stats.tagProgress = tags.map { progress(for: $0, activities: activities, calc: calc) }
         return stats
+    }
+
+    static func progress(for tag: Tag, activities: [Activity], calc: DayCalculator) -> TagProgress {
+        let cadence = tag.cadence
+        let anchor = tag.createdAt
+        let index = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
+
+        let inPeriod = entries(of: tag, in: activities)
+            .filter { calc.periodIndex(for: $0.timestamp, cadence: cadence, anchor: anchor) == index }
+            .sorted { $0.timestamp < $1.timestamp }
+
+        var counts: [UUID: Int] = [:]
+        for entry in inPeriod { counts[entry.activityID, default: 0] += 1 }
+
+        // Sidebar order, same as the day rail's tallies.
+        let tallies = activities
+            .filter { counts[$0.id] != nil }
+            .map { ActivityTally(activityID: $0.id, name: $0.name, color: $0.color, count: counts[$0.id] ?? 0) }
+
+        let end = calc.periodEnd(index: index, cadence: cadence, anchor: anchor)
+
+        return TagProgress(
+            tagID: tag.id,
+            name: tag.name,
+            count: inPeriod.count,
+            target: tag.target,
+            cadence: cadence,
+            periodLabel: calc.periodLabel(index: index, cadence: cadence, anchor: anchor),
+            daysRemaining: max(0, calc.daysBetween(calc.today, end)),
+            fills: inPeriod.map(\.rail),
+            tallies: tallies
+        )
     }
 
     static func progress(for activity: Activity, calc: DayCalculator) -> PeriodProgress {

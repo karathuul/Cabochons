@@ -5,6 +5,8 @@ internal import SwiftUI
 enum Route: Hashable {
     case day
     case activity(Activity.ID)
+    /// The day view, narrowed to one tag's members.
+    case tag(Tag.ID)
 }
 
 struct ContentView: View {
@@ -12,6 +14,8 @@ struct ContentView: View {
     @State private var selection: Route? = .day
     @State private var editing: Activity?
     @State private var creatingNew = false
+    @State private var editingTag: Tag?
+    @State private var creatingTag = false
     @State private var showingData = false
     /// Persisted so the sidebar doesn't re-expand every launch — the whole
     /// point of hiding is to get things out of the way.
@@ -30,6 +34,12 @@ struct ContentView: View {
                 } else {
                     DayView()
                 }
+            case .tag(let id):
+                if store.tag(id) != nil {
+                    DayView(scope: id).id(id)
+                } else {
+                    DayView()
+                }
             }
         }
         .sheet(isPresented: $creatingNew) {
@@ -43,6 +53,16 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingData) { DataSheet() }
+        .sheet(isPresented: $creatingTag) {
+            TagEditor(mode: .create) { tag in
+                store.add(tag)
+            }
+        }
+        .sheet(item: $editingTag) { tag in
+            TagEditor(mode: .edit(tag)) { updated in
+                store.update(updated)
+            }
+        }
     }
 
     // MARK: Sidebar
@@ -54,6 +74,38 @@ struct ContentView: View {
             Section {
                 TodayRow()
                     .tag(Route.day)
+            }
+            
+            // Tags only make sense once there's something to tag.
+            if !store.activities.isEmpty {
+                Section("Tags") {
+                    if store.tags.isEmpty {
+                        Button {
+                            creatingTag = true
+                        } label: {
+                            Label("Add a tag", systemImage: "tag")
+                                .font(.system(.subheadline, design: .rounded))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(store.tags) { tag in
+                            TagSidebarRow(tag: tag)
+                                .tag(Route.tag(tag.id))
+                                .contextMenu {
+                                    Button("Edit") { editingTag = tag }
+                                    Divider()
+                                    Button("Delete", role: .destructive) {
+                                        if selection == .tag(tag.id) { selection = .day }
+                                        store.delete(tag: tag.id)
+                                    }
+                                }
+                        }
+                        .onMove { source, destination in
+                            store.moveTags(from: source, to: destination)
+                        }
+                    }
+                }
             }
 
             Section("Activities") {
@@ -80,6 +132,7 @@ struct ContentView: View {
                     }
                 }
             }
+
 
             if !store.hiddenActivities.isEmpty {
                 Section {
@@ -138,10 +191,15 @@ struct ContentView: View {
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    creatingNew = true
+                Menu {
+                    Button("New activity", systemImage: "circle.fill") { creatingNew = true }
+                    Button("New tag", systemImage: "tag") { creatingTag = true }
+                        .disabled(store.activities.isEmpty)
                 } label: {
-                    Label("New activity", systemImage: "plus")
+                    Label("New", systemImage: "plus")
+                } primaryAction: {
+                    // A plain click still does the common thing.
+                    creatingNew = true
                 }
             }
             ToolbarItem {
@@ -197,6 +255,47 @@ private struct TodayRow: View {
                 .font(.system(.caption, design: .rounded, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+/// A tag row is a small period rail: mixed colours from its members, sized
+/// to the tag's own target, not the day's.
+private struct TagSidebarRow: View {
+    @Environment(LogStore.self) private var store
+    let tag: Tag
+
+    var body: some View {
+        let progress = store.progress(for: tag)
+
+        HStack(spacing: 12) {
+            Image(systemName: "tag.fill")
+                .font(.system(size: 13))
+                .foregroundStyle(progress.isMet ? Chrome.gold : Chrome.steelHi)
+                .frame(width: 26)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(tag.name)
+                    .font(.system(.body, design: .rounded, weight: .medium))
+                    .lineLimit(1)
+
+                SlotRail(fills: progress.fills, capacity: progress.target, size: 9, maxSlots: 14)
+
+                Text("\(progress.count) of \(progress.target) this \(progress.cadence.phrase)")
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            if progress.isMet {
+                Image(systemName: "star.fill")
+                    .font(.caption)
+                    .foregroundStyle(Chrome.gold)
+            }
         }
         .padding(.vertical, 3)
     }

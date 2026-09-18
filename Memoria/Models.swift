@@ -162,6 +162,74 @@ struct Activity: Identifiable, Codable, Hashable {
     }
 }
 
+// MARK: - Tag
+
+/// A category laid across activities — "exercise", "social", "creative". A
+/// tag has its own target and cadence, and its progress is the sum of every
+/// member's jewels within the tag's current period.
+///
+/// Membership lives here, not on the activity, so configuring a rail is one
+/// edit in one place and `Activity`'s schema doesn't move. An activity can
+/// belong to any number of tags: acro can be social *and* exercise.
+///
+/// Tags stack with activity targets rather than replacing them. "Run 3× a
+/// week" and "exercise 5× a week" are both live; one run advances both.
+///
+/// Lives in this file, next to `Activity`, because `LogFile` carries tags and
+/// the widget decodes `LogFile` — so wherever `Activity` compiles, this must.
+struct Tag: Identifiable, Codable, Hashable {
+    var id: UUID = UUID()
+    var name: String
+    /// Jewels per period. Never 0 — a tag with nothing to ask for is just a
+    /// label, and the app doesn't do labels.
+    var target: Int
+    var cadence: Cadence = .weekly
+    /// Ordered, so a tag's legend reads the same every day. Kept in sync by
+    /// `LogStore.delete(_:)`, which prunes a deleted activity from every tag.
+    var activityIDs: [UUID] = []
+    /// Period anchor, same rule as `Activity.createdAt`.
+    var createdAt: Date = .now
+
+    func contains(_ id: Activity.ID) -> Bool {
+        activityIDs.contains(id)
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        target: Int,
+        cadence: Cadence = .weekly,
+        activityIDs: [UUID] = [],
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.name = name
+        self.target = max(1, target)
+        self.cadence = cadence
+        self.activityIDs = activityIDs
+        self.createdAt = createdAt
+    }
+
+    // MARK: Codable, with migration
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, target, cadence, activityIDs, createdAt
+    }
+
+    /// Every key but `name` falls back, so a tag written by a future version
+    /// with fields this one doesn't know still loads. `encode(to:)` is
+    /// synthesised: every case here pairs with a property.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try container.decode(String.self, forKey: .name)
+        target = try max(1, container.decodeIfPresent(Int.self, forKey: .target) ?? 1)
+        cadence = try container.decodeIfPresent(Cadence.self, forKey: .cadence) ?? .weekly
+        activityIDs = try container.decodeIfPresent([UUID].self, forKey: .activityIDs) ?? []
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
+    }
+}
+
 // MARK: - Palette
 
 /// A jewel colour, stored as hue/saturation/brightness rather than RGB so a

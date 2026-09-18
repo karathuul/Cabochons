@@ -9,11 +9,18 @@ struct ActivityEditor: View {
     }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(LogStore.self) private var store
 
     let mode: Mode
     let onSave: (Activity) -> Void
 
     @Environment(\.self) private var environment
+
+    /// Which tags this activity belongs to. Membership lives on the tag, so
+    /// this is seeded from the store on appear (the environment isn't
+    /// available in `init`) and written back through `store.setTags`.
+    @State private var tagIDs: Set<Tag.ID> = []
+    @State private var seededTags = false
 
     @State private var name = ""
     @State private var color: MateriaColor = .magic
@@ -194,6 +201,16 @@ struct ActivityEditor: View {
 
             }
 
+            if !store.tags.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    FieldLabel("Tags")
+                    TagChips(tags: store.tags, selected: $tagIDs)
+                    Text("Every jewel here also counts toward each tag it's in.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Spacer(minLength: 0)
 
             HStack {
@@ -212,17 +229,28 @@ struct ActivityEditor: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Chrome.panel)
         #if os(macOS)
-        .frame(width: 420, height: 540)
+        .frame(width: 420, height: store.tags.isEmpty ? 540 : 620)
         #endif
+        .onAppear {
+            guard !seededTags else { return }
+            seededTags = true
+            if case .edit(let activity) = mode {
+                tagIDs = Set(store.tags(containing: activity.id).map(\.id))
+            }
+        }
     }
 
     private func save() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
 
+        // `onSave` puts the activity in the store; membership is written
+        // second because `setTags` needs the activity to exist to mean anything.
         switch mode {
         case .create:
-            onSave(Activity(name: trimmed, color: color, target: savedTarget, cadence: savedCadence))
+            let activity = Activity(name: trimmed, color: color, target: savedTarget, cadence: savedCadence)
+            onSave(activity)
+            store.setTags(tagIDs, for: activity.id)
         case .edit(let existing):
             var updated = existing
             updated.name = trimmed
@@ -230,7 +258,251 @@ struct ActivityEditor: View {
             updated.target = savedTarget
             updated.cadence = savedCadence
             onSave(updated)
+            store.setTags(tagIDs, for: existing.id)
         }
+        dismiss()
+    }
+}
+
+/// Toggleable pills, one per tag. Shared by the activity editor (pick tags for
+/// this activity) — the tag editor goes the other way and picks activities.
+private struct TagChips: View {
+    let tags: [Tag]
+    @Binding var selected: Set<Tag.ID>
+
+    var body: some View {
+        FlowLayout(spacing: 8, lineSpacing: 8) {
+            ForEach(tags) { tag in
+                let on = selected.contains(tag.id)
+                Button {
+                    if on { selected.remove(tag.id) } else { selected.insert(tag.id) }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: on ? "checkmark" : "tag")
+                            .font(.system(size: 9, weight: .bold))
+                        Text(tag.name)
+                            .font(.system(.caption, design: .rounded, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background {
+                        Capsule().fill(on ? Chrome.steel.opacity(0.55) : Chrome.socketVoid.opacity(0.6))
+                    }
+                    .overlay {
+                        Capsule().strokeBorder(on ? Chrome.steelHi : Chrome.steel.opacity(0.4), lineWidth: 1)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tag.name)
+                .accessibilityValue(on ? "in" : "out")
+            }
+        }
+    }
+}
+
+// MARK: - Tag editor
+
+/// Name, cadence, target, and which activities feed it. The rail at the top
+/// is live: toggle a member in and its jewels from this period appear, so
+/// you're configuring a rail you can already see.
+struct TagEditor: View {
+    enum Mode {
+        case create
+        case edit(Tag)
+    }
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(LogStore.self) private var store
+
+    let mode: Mode
+    let onSave: (Tag) -> Void
+
+    @State private var name = ""
+    @State private var target = 5
+    @State private var cadenceCount = 1
+    @State private var cadenceUnit: Cadence.Unit = .week
+    @State private var selected: Set<Activity.ID> = []
+
+    init(mode: Mode, onSave: @escaping (Tag) -> Void) {
+        self.mode = mode
+        self.onSave = onSave
+        if case .edit(let tag) = mode {
+            _name = State(initialValue: tag.name)
+            _target = State(initialValue: max(1, tag.target))
+            _cadenceCount = State(initialValue: tag.cadence.count)
+            _cadenceUnit = State(initialValue: tag.cadence.unit)
+            _selected = State(initialValue: Set(tag.activityIDs))
+        }
+    }
+
+    private var isEditing: Bool {
+        if case .edit = mode { return true }
+        return false
+    }
+
+    private var cadence: Cadence {
+        Cadence(count: cadenceCount, unit: cadenceUnit)
+    }
+
+    /// Sidebar order, so the rail's legend is stable regardless of the order
+    /// things were ticked.
+    private var orderedMembers: [UUID] {
+        store.activities.map(\.id).filter(selected.contains)
+    }
+
+    /// What the tag would be if saved right now. Drives the preview rail.
+    private var draft: Tag {
+        switch mode {
+        case .create:
+            return Tag(name: name, target: target, cadence: cadence, activityIDs: orderedMembers)
+        case .edit(let existing):
+            var updated = existing
+            updated.name = name
+            updated.target = target
+            updated.cadence = cadence
+            updated.activityIDs = orderedMembers
+            return updated
+        }
+    }
+
+    private var sentence: String {
+        let times = target == 1 ? "Once" : "\(target) times"
+        return cadence.isDaily ? "\(times) a day" : "\(times) every \(cadence.phrase)"
+    }
+
+    var body: some View {
+        let preview = store.progress(for: draft)
+
+        VStack(alignment: .leading, spacing: 22) {
+            Text(isEditing ? "Edit tag" : "New tag")
+                .font(.system(.title2, design: .rounded, weight: .bold))
+
+            VStack(alignment: .leading, spacing: 6) {
+                FieldLabel("Name")
+                TextField("Exercise, social, creative…", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .rounded))
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                FieldLabel("How often")
+
+                HStack(spacing: 10) {
+                    Stepper(value: $target, in: 1...60) {
+                        Text("\(target)")
+                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .monospacedDigit()
+                            .frame(minWidth: 26, alignment: .leading)
+                    }
+                    .fixedSize()
+
+                    Text("every")
+                        .font(.system(.body, design: .rounded))
+                        .foregroundStyle(.secondary)
+
+                    Stepper(value: $cadenceCount, in: 1...30) {
+                        Text("\(cadenceCount)")
+                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .monospacedDigit()
+                            .frame(minWidth: 26, alignment: .leading)
+                    }
+                    .fixedSize()
+
+                    Picker("", selection: $cadenceUnit) {
+                        ForEach(Cadence.Unit.allCases) { unit in
+                            Text(unit.label(count: cadenceCount)).tag(unit)
+                        }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
+
+                Text(sentence)
+                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                SlotRail(fills: preview.fills, capacity: target, size: 18, maxSlots: 40)
+                    .animation(.spring(response: 0.35, dampingFraction: 0.6), value: preview.fills)
+
+                Text(selected.isEmpty
+                     ? "Pick activities below. Their jewels fill these sockets together."
+                     : "\(preview.count) so far this \(cadence.phrase). Any member's jewel counts.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                FieldLabel("Activities")
+
+                if store.activities.isEmpty {
+                    Text("No activities to tag yet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    List {
+                        ForEach(store.activities) { activity in
+                            let on = selected.contains(activity.id)
+                            Button {
+                                if on { selected.remove(activity.id) } else { selected.insert(activity.id) }
+                            } label: {
+                                HStack(spacing: 12) {
+                                    MateriaOrb(color: activity.color, size: 22, glow: on ? 1 : 0.4)
+                                        .saturation(on ? 1 : 0.5)
+
+                                    Text(activity.name)
+                                        .font(.system(.body, design: .rounded, weight: .medium))
+                                        .lineLimit(1)
+
+                                    if activity.isHidden {
+                                        Image(systemName: "eye.slash")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+
+                                    Spacer(minLength: 0)
+
+                                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(on ? Chrome.gold : Chrome.steel)
+                                }
+                                .contentShape(Rectangle())
+                                .opacity(activity.isHidden ? 0.6 : 1)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color.clear)
+                        }
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 120)
+                }
+            }
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button(isEditing ? "Save changes" : "Create tag") {
+                    save()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Chrome.panel)
+        #if os(macOS)
+        .frame(width: 420, height: 600)
+        #endif
+    }
+
+    private func save() {
+        var tag = draft
+        tag.name = name.trimmingCharacters(in: .whitespaces)
+        guard !tag.name.isEmpty else { return }
+        onSave(tag)
         dismiss()
     }
 }

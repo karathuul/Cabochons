@@ -18,9 +18,40 @@ enum AppGroup {
 /// Shared between targets because the widget decodes the same file the app
 /// writes.
 struct LogFile: Codable {
-    var version: Int = 1
+    /// 1: activities only. 2: adds `tags`.
+    var version: Int = 2
     var dayStartHour: Int = 0
     var activities: [Activity] = []
+    var tags: [Tag] = []
+
+    init(
+        version: Int = 2,
+        dayStartHour: Int = 0,
+        activities: [Activity] = [],
+        tags: [Tag] = []
+    ) {
+        self.version = version
+        self.dayStartHour = dayStartHour
+        self.activities = activities
+        self.tags = tags
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case version, dayStartHour, activities, tags
+    }
+
+    /// Written by hand because synthesised decoding treats a non-optional
+    /// property as required even when it has a default — the default only
+    /// serves the memberwise init. A v1 file has no `tags` key, so without
+    /// this it would throw, `SharedStorage.load()` would swallow the throw,
+    /// and every jewel would appear to vanish. `encode(to:)` stays synthesised.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        dayStartHour = try container.decodeIfPresent(Int.self, forKey: .dayStartHour) ?? 0
+        activities = try container.decodeIfPresent([Activity].self, forKey: .activities) ?? []
+        tags = try container.decodeIfPresent([Tag].self, forKey: .tags) ?? []
+    }
 }
 
 /// The one place that knows where the data file lives and how it's coded.
