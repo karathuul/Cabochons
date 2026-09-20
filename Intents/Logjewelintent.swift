@@ -9,7 +9,7 @@ struct LogJewelIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Jewel"
 
     static var description = IntentDescription(
-        "Slots one or more jewels into an activity and returns its new count for today.",
+        "Adds one or more Memoira into an activity and returns its new count for today.",
         categoryName: "Logging",
         searchKeywords: ["memoria", "jewel", "habit", "track", "tally", "count"]
     )
