@@ -1,3 +1,7 @@
+// MARK: - Sheets
+// Every modal the app presents: the activity editor, the tag editor and its
+// symbol picker, the day and period jewel lists, and the note editor.
+
 internal import SwiftUI
 
 // MARK: - Activity editor
@@ -278,8 +282,11 @@ private struct TagChips: View {
                     if on { selected.remove(tag.id) } else { selected.insert(tag.id) }
                 } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: on ? "checkmark" : "tag")
-                            .font(.system(size: 9, weight: .bold))
+                        // The tag's own symbol until it's on. Fixed width, so
+                        // swapping to the checkmark doesn't reflow the row.
+                        Image(systemName: on ? "checkmark" : tag.symbol)
+                            .font(.system(size: 10, weight: .semibold))
+                            .frame(width: 14)
                         Text(tag.name)
                             .font(.system(.caption, design: .rounded, weight: .medium))
                             .lineLimit(1)
@@ -303,9 +310,9 @@ private struct TagChips: View {
 
 // MARK: - Tag editor
 
-/// Name, cadence, target, and which activities feed it. The rail at the top
-/// is live: toggle a member in and its jewels from this period appear, so
-/// you're configuring a rail you can already see.
+/// Name, symbol, cadence, target, and which activities feed it. The rail is
+/// live: toggle a member in and its jewels from this period appear, so you're
+/// configuring a rail you can already see.
 struct TagEditor: View {
     enum Mode {
         case create
@@ -319,6 +326,9 @@ struct TagEditor: View {
     let onSave: (Tag) -> Void
 
     @State private var name = ""
+    @State private var symbol = Tag.defaultSymbol
+    @State private var choosingSymbol = false
+    @FocusState private var nameFocused: Bool
     @State private var target = 5
     @State private var cadenceCount = 1
     @State private var cadenceUnit: Cadence.Unit = .week
@@ -329,6 +339,7 @@ struct TagEditor: View {
         self.onSave = onSave
         if case .edit(let tag) = mode {
             _name = State(initialValue: tag.name)
+            _symbol = State(initialValue: tag.symbol)
             _target = State(initialValue: max(1, tag.target))
             _cadenceCount = State(initialValue: tag.cadence.count)
             _cadenceUnit = State(initialValue: tag.cadence.unit)
@@ -355,10 +366,11 @@ struct TagEditor: View {
     private var draft: Tag {
         switch mode {
         case .create:
-            return Tag(name: name, target: target, cadence: cadence, activityIDs: orderedMembers)
+            return Tag(name: name, symbol: symbol, target: target, cadence: cadence, activityIDs: orderedMembers)
         case .edit(let existing):
             var updated = existing
             updated.name = name
+            updated.symbol = symbol
             updated.target = target
             updated.cadence = cadence
             updated.activityIDs = orderedMembers
@@ -372,111 +384,25 @@ struct TagEditor: View {
     }
 
     var body: some View {
-        let preview = store.progress(for: draft)
+        // Only the verbs stay put. With the symbol grid open, the rest is
+        // taller than a phone screen, and a sheet that can't scroll is a
+        // sheet with fields you can't reach.
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    Text(isEditing ? "Edit tag" : "New tag")
+                        .font(.system(.title2, design: .rounded, weight: .bold))
 
-        VStack(alignment: .leading, spacing: 22) {
-            Text(isEditing ? "Edit tag" : "New tag")
-                .font(.system(.title2, design: .rounded, weight: .bold))
-
-            VStack(alignment: .leading, spacing: 6) {
-                FieldLabel("Name")
-                TextField("Exercise, social, creative…", text: $name)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .rounded))
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                FieldLabel("How often")
-
-                HStack(spacing: 10) {
-                    Stepper(value: $target, in: 1...60) {
-                        Text("\(target)")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
-                            .monospacedDigit()
-                            .frame(minWidth: 26, alignment: .leading)
-                    }
-                    .fixedSize()
-
-                    Text("every")
-                        .font(.system(.body, design: .rounded))
-                        .foregroundStyle(.secondary)
-
-                    Stepper(value: $cadenceCount, in: 1...30) {
-                        Text("\(cadenceCount)")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
-                            .monospacedDigit()
-                            .frame(minWidth: 26, alignment: .leading)
-                    }
-                    .fixedSize()
-
-                    Picker("", selection: $cadenceUnit) {
-                        ForEach(Cadence.Unit.allCases) { unit in
-                            Text(unit.label(count: cadenceCount)).tag(unit)
-                        }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
+                    nameAndSymbol
+                    schedule
+                    members
                 }
-
-                Text(sentence)
-                    .font(.system(.caption, design: .rounded, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                SlotRail(fills: preview.fills, capacity: target, size: 18, maxSlots: 40)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.6), value: preview.fills)
-
-                Text(selected.isEmpty
-                     ? "Pick activities below. Their jewels fill these sockets together."
-                     : "\(preview.count) so far this \(cadence.phrase). Any member's jewel counts.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .scrollDismissesKeyboard(.interactively)
 
-            VStack(alignment: .leading, spacing: 10) {
-                FieldLabel("Activities")
-
-                if store.activities.isEmpty {
-                    Text("No activities to tag yet.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    List {
-                        ForEach(store.activities) { activity in
-                            let on = selected.contains(activity.id)
-                            Button {
-                                if on { selected.remove(activity.id) } else { selected.insert(activity.id) }
-                            } label: {
-                                HStack(spacing: 12) {
-                                    MateriaOrb(color: activity.color, size: 22, glow: on ? 1 : 0.4)
-                                        .saturation(on ? 1 : 0.5)
-
-                                    Text(activity.name)
-                                        .font(.system(.body, design: .rounded, weight: .medium))
-                                        .lineLimit(1)
-
-                                    if activity.isHidden {
-                                        Image(systemName: "eye.slash")
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
-                                    }
-
-                                    Spacer(minLength: 0)
-
-                                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(on ? Chrome.gold : Chrome.steel)
-                                }
-                                .contentShape(Rectangle())
-                                .opacity(activity.isHidden ? 0.6 : 1)
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color.clear)
-                        }
-                    }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 120)
-                }
-            }
+            Divider().overlay(Chrome.steel.opacity(0.3))
 
             HStack {
                 Button("Cancel") { dismiss() }
@@ -489,13 +415,159 @@ struct TagEditor: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Chrome.panel)
         #if os(macOS)
         .frame(width: 420, height: 600)
         #endif
+    }
+
+    // MARK: Sections
+
+    /// Symbol and name together, because they're the same question: what this
+    /// tag is called and what it looks like. The grid opens underneath rather
+    /// than in a popover — a popover anchored this high on a phone lands over
+    /// the sheet with nowhere to go.
+    private var nameAndSymbol: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            FieldLabel("Name")
+
+            HStack(spacing: 8) {
+                SymbolWell(symbol: symbol, isOpen: choosingSymbol) {
+                    // Keyboard down first, so the grid opens into the space it
+                    // was covering.
+                    nameFocused = false
+                    withAnimation(.snappy(duration: 0.25)) {
+                        choosingSymbol.toggle()
+                    }
+                }
+
+                TextField("Exercise, social, creative…", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .rounded))
+                    .focused($nameFocused)
+            }
+
+            if choosingSymbol {
+                TagSymbolGrid(selection: $symbol) {
+                    withAnimation(.snappy(duration: 0.25)) {
+                        choosingSymbol = false
+                    }
+                }
+                .padding(.top, 6)
+            }
+        }
+    }
+
+    private var schedule: some View {
+        let preview = store.progress(for: draft)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            FieldLabel("How often")
+
+            HStack(spacing: 10) {
+                Stepper(value: $target, in: 1...60) {
+                    Text("\(target)")
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .frame(minWidth: 26, alignment: .leading)
+                }
+                .fixedSize()
+
+                Text("every")
+                    .font(.system(.body, design: .rounded))
+                    .foregroundStyle(.secondary)
+
+                Stepper(value: $cadenceCount, in: 1...30) {
+                    Text("\(cadenceCount)")
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .frame(minWidth: 26, alignment: .leading)
+                }
+                .fixedSize()
+
+                Picker("", selection: $cadenceUnit) {
+                    ForEach(Cadence.Unit.allCases) { unit in
+                        Text(unit.label(count: cadenceCount)).tag(unit)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
+
+            Text(sentence)
+                .font(.system(.caption, design: .rounded, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            SlotRail(fills: preview.fills, capacity: target, size: 18, maxSlots: 40)
+                .animation(.spring(response: 0.35, dampingFraction: 0.6), value: preview.fills)
+
+            Text(selected.isEmpty
+                 ? "Pick activities below. Their jewels fill these sockets together."
+                 : "\(preview.count) so far this \(cadence.phrase). Any member's jewel counts.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Plain rows, not a `List`: a list inside a scroll view has no height of
+    /// its own and fights its parent for the gesture.
+    private var members: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            FieldLabel("Activities")
+
+            if store.activities.isEmpty {
+                Text("No activities to tag yet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(store.activities) { activity in
+                        memberRow(activity)
+
+                        if activity.id != store.activities.last?.id {
+                            Divider().overlay(Chrome.steel.opacity(0.25))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func memberRow(_ activity: Activity) -> some View {
+        let on = selected.contains(activity.id)
+
+        return Button {
+            if on { selected.remove(activity.id) } else { selected.insert(activity.id) }
+        } label: {
+            HStack(spacing: 12) {
+                MateriaOrb(color: activity.color, size: 22, glow: on ? 1 : 0.4)
+                    .saturation(on ? 1 : 0.5)
+
+                Text(activity.name)
+                    .font(.system(.body, design: .rounded, weight: .medium))
+                    .lineLimit(1)
+
+                if activity.isHidden {
+                    Image(systemName: "eye.slash")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(on ? Chrome.gold : Chrome.steel)
+            }
+            .padding(.vertical, 9)
+            .contentShape(Rectangle())
+            .opacity(activity.isHidden ? 0.6 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(on ? "in" : "out")
     }
 
     private func save() {
@@ -505,6 +577,199 @@ struct TagEditor: View {
         onSave(tag)
         dismiss()
     }
+}
+
+// MARK: - Tag symbols
+
+/// The tag's symbol in a small recessed tile beside its name: the same mark
+/// its sidebar row wears. Sized to sit flush with the text field, and lit
+/// while the grid below it is open.
+private struct SymbolWell: View {
+    let symbol: String
+    let isOpen: Bool
+    let action: () -> Void
+
+    #if os(macOS)
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 22
+    #else
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 34
+    #endif
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: side * 0.5, weight: .medium))
+                .foregroundStyle(Chrome.steelHi)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: side, height: side)
+                .background {
+                    RoundedRectangle(cornerRadius: side * 0.24, style: .continuous)
+                        .fill(isOpen ? Chrome.steel.opacity(0.5) : Chrome.socketVoid.opacity(0.6))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: side * 0.24, style: .continuous)
+                        .strokeBorder(isOpen ? Chrome.steelHi : Chrome.steel.opacity(0.4), lineWidth: 1)
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Choose a symbol")
+        .accessibilityLabel("Symbol")
+        .accessibilityValue(TagSymbol.label(for: symbol))
+        .accessibilityHint(isOpen ? "Closes the symbol grid" : "Opens the symbol grid")
+    }
+}
+
+/// The tray that opens under the name field. Columns are adaptive rather than
+/// a fixed seven, so it fills a Mac sheet and still fits a narrow phone; the
+/// page scrolls behind it. Picking closes the tray and the well swaps to the
+/// new symbol right above it.
+private struct TagSymbolGrid: View {
+    @Binding var selection: String
+    let done: () -> Void
+
+    #if os(macOS)
+    private let cell: CGFloat = 32
+    #else
+    private let cell: CGFloat = 42
+    #endif
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: cell, maximum: cell * 1.35), spacing: 8)],
+            spacing: 8
+        ) {
+            ForEach(TagSymbol.all) { option in
+                cellButton(option)
+            }
+        }
+        .padding(10)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Chrome.socketVoid.opacity(0.35))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Chrome.steel.opacity(0.35), lineWidth: 1)
+        }
+    }
+
+    private func cellButton(_ option: TagSymbol) -> some View {
+        let on = option.name == selection
+
+        return Button {
+            withAnimation(.snappy(duration: 0.2)) {
+                selection = option.name
+            }
+            done()
+        } label: {
+            Image(systemName: option.name)
+                .font(.system(size: cell * 0.42, weight: .medium))
+                .foregroundStyle(Chrome.steelHi)
+                .frame(maxWidth: .infinity)
+                .frame(height: cell)
+                .background {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(on ? Chrome.steel.opacity(0.55) : Chrome.socketVoid.opacity(0.6))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(on ? Chrome.steelHi : Chrome.steel.opacity(0.4), lineWidth: 1)
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(option.label)
+        .accessibilityLabel(option.label)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+}
+
+/// What a tag can wear. Curated rather than the whole SF Symbols library:
+/// every one reads at sidebar size, and all are old enough (SF Symbols 4 or
+/// earlier) to exist on every OS the app supports. Grouped in sevens so
+/// related marks stay together as the grid reflows. Adding one is one line.
+private struct TagSymbol: Identifiable, Sendable {
+    let name: String
+    /// Spoken by VoiceOver, and the tooltip on macOS.
+    let label: String
+    var id: String { name }
+
+    init(_ name: String, _ label: String) {
+        self.name = name
+        self.label = label
+    }
+
+    /// Falls back to the raw name for anything not in the list, e.g. a
+    /// symbol written by a newer build.
+    static func label(for name: String) -> String {
+        all.first { $0.name == name }?.label ?? name
+    }
+
+    static let all: [TagSymbol] = [
+        // Marks
+        .init("tag.fill", "Tag"),
+        .init("star.fill", "Star"),
+        .init("heart.fill", "Heart"),
+        .init("sparkles", "Sparkles"),
+        .init("diamond.fill", "Diamond"),
+        .init("hexagon.fill", "Hexagon"),
+        .init("flame.fill", "Flame"),
+
+        // Nature
+        .init("bolt.fill", "Bolt"),
+        .init("drop.fill", "Drop"),
+        .init("leaf.fill", "Leaf"),
+        .init("snowflake", "Snowflake"),
+        .init("sun.max.fill", "Sun"),
+        .init("moon.fill", "Moon"),
+        .init("mountain.2.fill", "Mountains"),
+
+        // Body
+        .init("figure.run", "Running"),
+        .init("dumbbell.fill", "Strength"),
+        .init("figure.yoga", "Yoga"),
+        .init("figure.mind.and.body", "Meditation"),
+        .init("figure.hiking", "Hiking"),
+        .init("bicycle", "Cycling"),
+        .init("figure.pool.swim", "Swimming"),
+
+        // Home and care
+        .init("bed.double.fill", "Sleep"),
+        .init("fork.knife", "Food"),
+        .init("cup.and.saucer.fill", "Coffee"),
+        .init("cross.case.fill", "Health"),
+        .init("house.fill", "Home"),
+        .init("cart.fill", "Errands"),
+        .init("pawprint.fill", "Pets"),
+
+        // Mind
+        .init("book.fill", "Reading"),
+        .init("brain.head.profile", "Mind"),
+        .init("graduationcap.fill", "Study"),
+        .init("lightbulb.fill", "Ideas"),
+        .init("puzzlepiece.fill", "Puzzles"),
+        .init("globe.americas.fill", "World"),
+        .init("pencil", "Writing"),
+
+        // Making and play
+        .init("paintpalette.fill", "Art"),
+        .init("music.note", "Music"),
+        .init("camera.fill", "Photography"),
+        .init("hammer.fill", "Building"),
+        .init("wrench.and.screwdriver.fill", "Fixing"),
+        .init("chevron.left.forwardslash.chevron.right", "Code"),
+        .init("gamecontroller.fill", "Games"),
+
+        // People and the rest
+        .init("person.2.fill", "People"),
+        .init("bubble.left.and.bubble.right.fill", "Talking"),
+        .init("gift.fill", "Giving"),
+        .init("briefcase.fill", "Work"),
+        .init("dollarsign.circle.fill", "Money"),
+        .init("airplane", "Travel"),
+        .init("trophy.fill", "Goals"),
+    ]
 }
 
 private struct FieldLabel: View {

@@ -1,3 +1,8 @@
+// MARK: - ContentView
+// The app's root split view. The sidebar lists Today, tags (each wearing its
+// chosen symbol over a small period rail) and activities; the detail pane
+// shows the day, one activity, or the day narrowed to a tag.
+
 internal import SwiftUI
 
 /// Sidebar destinations. The day is now a first-class place, not something you
@@ -78,7 +83,7 @@ struct ContentView: View {
             
             // Tags only make sense once there's something to tag.
             if !store.activities.isEmpty {
-                Section("Tags") {
+                Section {
                     if store.tags.isEmpty {
                         Button {
                             creatingTag = true
@@ -100,10 +105,39 @@ struct ContentView: View {
                                         store.delete(tag: tag.id)
                                     }
                                 }
+                                // The context menu is a long press, i.e. the
+                                // same secret handshake that hid "New tag".
+                                // Swipe is the gesture people already try on an
+                                // iOS list, so the editor has a way in that
+                                // nobody has to be told about. No full swipe:
+                                // the first action here deletes.
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Delete", role: .destructive) {
+                                        if selection == .tag(tag.id) { selection = .day }
+                                        store.delete(tag: tag.id)
+                                    }
+                                    Button("Edit") { editingTag = tag }
+                                }
                         }
                         .onMove { source, destination in
                             store.moveTags(from: source, to: destination)
                         }
+                    }
+                } header: {
+                    // The + lives here as well as in the toolbar, because on
+                    // iOS a toolbar menu is one more tap away and easy to miss.
+                    HStack {
+                        Text("Tags")
+                        Spacer(minLength: 0)
+                        Button {
+                            creatingTag = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("New tag")
                     }
                 }
             }
@@ -191,15 +225,15 @@ struct ContentView: View {
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                // No `primaryAction`: with one, iOS runs it on tap and only
+                // reveals the menu on a long press, which hides "New tag"
+                // from anyone who hasn't read the docs.
                 Menu {
                     Button("New activity", systemImage: "circle.fill") { creatingNew = true }
                     Button("New tag", systemImage: "tag") { creatingTag = true }
                         .disabled(store.activities.isEmpty)
                 } label: {
                     Label("New", systemImage: "plus")
-                } primaryAction: {
-                    // A plain click still does the common thing.
-                    creatingNew = true
                 }
             }
             ToolbarItem {
@@ -261,7 +295,8 @@ private struct TodayRow: View {
 }
 
 /// A tag row is a small period rail: mixed colours from its members, sized
-/// to the tag's own target, not the day's.
+/// to the tag's own target, not the day's. The glyph is the tag's own symbol,
+/// gold once the period's target is met.
 private struct TagSidebarRow: View {
     @Environment(LogStore.self) private var store
     let tag: Tag
@@ -270,7 +305,7 @@ private struct TagSidebarRow: View {
         let progress = store.progress(for: tag)
 
         HStack(spacing: 12) {
-            Image(systemName: "tag.fill")
+            Image(systemName: tag.symbol)
                 .font(.system(size: 13))
                 .foregroundStyle(progress.isMet ? Chrome.gold : Chrome.steelHi)
                 .frame(width: 26)

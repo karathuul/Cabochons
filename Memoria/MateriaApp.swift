@@ -8,6 +8,7 @@ import AppKit
 struct MateriaLogApp: App {
     @State private var store = LogStore.shared
     @State private var motion = TiltSource()
+    @State private var milestones = MilestoneCenter()
     @Environment(\.orbShading) private var sh
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("shimmerEnabled") private var shimmerEnabled = true

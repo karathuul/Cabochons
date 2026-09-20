@@ -166,7 +166,8 @@ struct Activity: Identifiable, Codable, Hashable {
 
 /// A category laid across activities — "exercise", "social", "creative". A
 /// tag has its own target and cadence, and its progress is the sum of every
-/// member's jewels within the tag's current period.
+/// member's jewels within the tag's current period. Each tag wears one SF
+/// Symbol, picked in the tag editor and shown in the sidebar and tag chips.
 ///
 /// Membership lives here, not on the activity, so configuring a rail is one
 /// edit in one place and `Activity`'s schema doesn't move. An activity can
@@ -178,8 +179,15 @@ struct Activity: Identifiable, Codable, Hashable {
 /// Lives in this file, next to `Activity`, because `LogFile` carries tags and
 /// the widget decodes `LogFile` — so wherever `Activity` compiles, this must.
 struct Tag: Identifiable, Codable, Hashable {
+    /// What a new tag wears, and what tags saved before symbols existed load
+    /// wearing.
+    static let defaultSymbol = "tag.fill"
+
     var id: UUID = UUID()
     var name: String
+    /// An SF Symbol name. Only the tag editor's curated list writes this; an
+    /// unknown name draws blank rather than crashing.
+    var symbol: String = Tag.defaultSymbol
     /// Jewels per period. Never 0 — a tag with nothing to ask for is just a
     /// label, and the app doesn't do labels.
     var target: Int
@@ -197,6 +205,7 @@ struct Tag: Identifiable, Codable, Hashable {
     init(
         id: UUID = UUID(),
         name: String,
+        symbol: String = Tag.defaultSymbol,
         target: Int,
         cadence: Cadence = .weekly,
         activityIDs: [UUID] = [],
@@ -204,6 +213,7 @@ struct Tag: Identifiable, Codable, Hashable {
     ) {
         self.id = id
         self.name = name
+        self.symbol = symbol
         self.target = max(1, target)
         self.cadence = cadence
         self.activityIDs = activityIDs
@@ -213,17 +223,19 @@ struct Tag: Identifiable, Codable, Hashable {
     // MARK: Codable, with migration
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, target, cadence, activityIDs, createdAt
+        case id, name, symbol, target, cadence, activityIDs, createdAt
     }
 
-    /// Every key but `name` falls back, so a tag written by a future version
-    /// with fields this one doesn't know still loads. `encode(to:)` is
+    /// Every key but `name` falls back, so a tag saved before a field existed
+    /// still loads — `symbol` is the first field to need it. `encode(to:)` is
     /// synthesised: every case here pairs with a property.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         name = try container.decode(String.self, forKey: .name)
-        target = try max(1, container.decodeIfPresent(Int.self, forKey: .target) ?? 1)
+        let storedSymbol = try container.decodeIfPresent(String.self, forKey: .symbol) ?? ""
+        symbol = storedSymbol.isEmpty ? Tag.defaultSymbol : storedSymbol
+        target = max(1, try container.decodeIfPresent(Int.self, forKey: .target) ?? 1)
         cadence = try container.decodeIfPresent(Cadence.self, forKey: .cadence) ?? .weekly
         activityIDs = try container.decodeIfPresent([UUID].self, forKey: .activityIDs) ?? []
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
