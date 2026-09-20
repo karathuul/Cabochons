@@ -2,15 +2,15 @@ import WidgetKit
 internal import SwiftUI
 
 @main
-struct MateriaWidgetBundle: WidgetBundle {
+struct MemoriaWidgetBundle: WidgetBundle {
     var body: some Widget {
-        MateriaWidget()
+        MemoriaWidget()
         HistoryWidget()
     }
 }
 
-struct MateriaWidget: Widget {
-    let kind = "MateriaTodayWidget"
+struct MemoriaWidget: Widget {
+    let kind = "MemoriaTodayWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: MateriaProvider()) { entry in

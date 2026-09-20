@@ -32,6 +32,20 @@ struct ActivityHistory {
         let fraction = Double(count) / Double(maxCount)
         return min(4, Int((fraction * 4).rounded(.up)))
     }
+    
+    /// The orb's opacity for a day's count: half-lit at level 1, solid at the
+    /// busiest day in the window, 0 for an empty day (a bare socket).
+    ///
+    /// Lives on the model rather than in a view so the widget grid, the detail
+    /// screen's year panel and the Canvas ramp can't drift apart — they did.
+    static func opacity(forLevel level: Int) -> Double {
+        guard level > 0 else { return 0 }
+        return 0.5 + Double(level - 1) * (0.5 / 3)
+    }
+
+    func opacity(for count: Int) -> Double {
+        Self.opacity(forLevel: level(for: count))
+    }
 
     // MARK: Building
 

@@ -107,6 +107,10 @@ struct ActivityDetailView: View {
                 tapRow(activity: activity, stats: stats)
                 statsPanel(stats)
                 if !activity.jewels.isEmpty {
+                    HistoryYearPanel(
+                        history: .build(for: activity, weeks: 53, calc: store.calc),
+                        color: activity.color
+                    )
                     weekdayPanel(activity: activity)
                     hourPanel(activity: activity)
                 }
