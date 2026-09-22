@@ -1,33 +1,28 @@
+// MARK: - Guide
+// Every word of in-app help, in one place. `GuideTopicID` is the key and
+// `GuideContent.topic(_:)` is an exhaustive switch over it, so adding a case
+// refuses to compile until its copy exists — no silently blank help rows.
+// `sections` decides what the Guide screen shows and in what order.
 //
-//  Guide.swift
+// One topic, several surfaces: the Guide sheet, an inline ⓘ, and later the
+// body of a tip. The copy is written once, here, never at a call site.
 //
-//  MARK: - Overview
-//  The single source of truth for every word of in-app help.
-//
-//  `GuideTopicID` is the type-safe key. `GuideContent.topic(_:)` is an
-//  exhaustive switch over it, which means adding a case refuses to compile
-//  until you write its copy — no silently blank help rows, ever.
-//
-//  One topic feeds three surfaces: the Guide screen (GuideView.swift), an
-//  inline ⓘ sheet, and later the body of a TipKit tip. Copy is written once
-//  here and never duplicated at a call site.
-//
-//  TARGET MEMBERSHIP: app target only. The widget never shows help, so this
-//  file does NOT go in MemoriaWidget.
-//
+// TARGET MEMBERSHIP: app target only. The widget shows no help.
 
 internal import Foundation
 
 // MARK: - Topic identity
 
-/// Every explainable concept in the app, exactly once.
+/// Every explainable idea in the app, exactly once.
 enum GuideTopicID: String, CaseIterable, Identifiable {
     case orbs
     case sockets
     case dayRail
+    case star
     case targets
     case whenever
     case streaks
+    case dayStart
     case notes
     case glint
     case tags
@@ -35,7 +30,7 @@ enum GuideTopicID: String, CaseIterable, Identifiable {
     case shimmer
     case widgets
     case shortcuts
-    case export
+    case data
 
     var id: String { rawValue }
 }
@@ -48,9 +43,9 @@ struct GuideTopic: Identifiable, Hashable {
     let title: String
     /// SF Symbol name.
     let symbol: String
-    /// One line. It has to stand alone — a tip or a ⓘ row may show nothing else.
+    /// One line. It has to stand alone — a tip or an ⓘ may show nothing else.
     let blurb: String
-    /// Optional second beat, for people who tapped in wanting more.
+    /// Optional second beat, for whoever tapped in wanting more.
     let detail: String?
 
     init(_ id: GuideTopicID,
@@ -76,8 +71,9 @@ struct GuideSection: Identifiable, Hashable {
 
 enum GuideContent {
 
-    /// Exhaustive by design. Add a `GuideTopicID` case and the compiler will
-    /// sit here with its arms folded until you write the words.
+    /// Exhaustive on purpose. A dictionary would be shorter and would hand back
+    /// an optional, which means a missing entry ships as a blank row. This way
+    /// the compiler stops you first.
     static func topic(_ id: GuideTopicID) -> GuideTopic {
         switch id {
 
@@ -86,8 +82,8 @@ enum GuideContent {
                 .orbs,
                 title: "Orbs & Jewels",
                 symbol: "circle.circle.fill",
-                blurb: "Tap an orb. A jewel drops into today. That's the whole app.",
-                detail: "Tap again for a second jewel. Everything else — targets, streaks, tags — is just counting these."
+                blurb: "Press an orb. A jewel drops into today. That's the whole app.",
+                detail: "Press again for another. Everything else — targets, streaks, tags — is only ever counting these."
             )
 
         case .sockets:
@@ -95,8 +91,8 @@ enum GuideContent {
                 .sockets,
                 title: "Sockets",
                 symbol: "circle.dotted",
-                blurb: "Empty sockets are what's left in the current period.",
-                detail: "Fill them all and the period is done. An orb showing none is either finished or set to Whenever."
+                blurb: "Empty sockets are what this period still wants from you.",
+                detail: "Fill them all and you're done until the period turns over."
             )
 
         case .dayRail:
@@ -104,8 +100,17 @@ enum GuideContent {
                 .dayRail,
                 title: "The Day Rail",
                 symbol: "rectangle.split.3x1.fill",
-                blurb: "Everything you logged today, in the order you logged it.",
+                blurb: "Everything logged today, in the order it happened.",
                 detail: "Colours mix freely. The rail doesn't sort by activity — it sorts by when."
+            )
+
+        case .star:
+            return GuideTopic(
+                .star,
+                title: "The Gold Star",
+                symbol: "star.fill",
+                blurb: "A gold star means that target is met for the period.",
+                detail: "Tags get one too, and their glyph turns gold with it. Keep going past it if you like — nothing stops you."
             )
 
         case .targets:
@@ -114,7 +119,7 @@ enum GuideContent {
                 title: "Targets",
                 symbol: "target",
                 blurb: "Pick a number and a stretch of time. Three a week. One a day.",
-                detail: "The sockets show what the current period still wants from you. Nothing carries over — a new period starts clean."
+                detail: "The rail is sized to that number, so a glance tells you where the period stands."
             )
 
         case .whenever:
@@ -123,7 +128,7 @@ enum GuideContent {
                 title: "Whenever",
                 symbol: "infinity",
                 blurb: "No target. No sockets. No nagging. Log it when it happens.",
-                detail: "For things worth noticing rather than enforcing. Whenever activities still count toward your totals."
+                detail: "For things worth noticing rather than enforcing. They still count toward your totals."
             )
 
         case .streaks:
@@ -133,6 +138,15 @@ enum GuideContent {
                 symbol: "flame.fill",
                 blurb: "A streak counts finished periods, not days in a row.",
                 detail: "Miss a Tuesday on a weekly target and nothing breaks, so long as the week lands. Daily targets are stricter. Obviously."
+            )
+
+        case .dayStart:
+            return GuideTopic(
+                .dayStart,
+                title: "When a Day Starts",
+                symbol: "moon.stars.fill",
+                blurb: "Your day doesn't have to start at midnight.",
+                detail: "Set it later and anything logged in the small hours counts toward the day you were actually still living. Found under Settings."
             )
 
         case .notes:
@@ -159,7 +173,7 @@ enum GuideContent {
                 title: "Tags",
                 symbol: "tag.fill",
                 blurb: "Group activities, then give the group its own target.",
-                detail: "An activity can wear as many tags as it likes. Tag targets stack on top of the activity's own — \"exercise five times a week\" doesn't care which exercise."
+                detail: "An activity can wear as many tags as it likes. Tag targets stack on top of each activity's own — \"exercise five times a week\" doesn't care which exercise."
             )
 
         case .hiding:
@@ -168,7 +182,7 @@ enum GuideContent {
                 title: "Hiding",
                 symbol: "eye.slash.fill",
                 blurb: "Hide an activity and it stops asking. Its jewels stay.",
-                detail: "Nothing is deleted, ever. Hiding only clears the forward-looking surfaces — the history keeps everything."
+                detail: "Nothing is deleted. Hiding only clears the forward-looking surfaces — previous days keep every jewel."
             )
 
         case .shimmer:
@@ -186,7 +200,7 @@ enum GuideContent {
                 title: "Widgets",
                 symbol: "square.grid.2x2.fill",
                 blurb: "Put today on the Home Screen, small or medium.",
-                detail: "Long-press the Home Screen, tap the plus, find Cabochon."
+                detail: "Long-press the Home Screen, tap the plus, and look for the app by name."
             )
 
         case .shortcuts:
@@ -195,26 +209,26 @@ enum GuideContent {
                 title: "Shortcuts & Siri",
                 symbol: "mic.fill",
                 blurb: "Log a jewel by voice, or hand one to an automation.",
-                detail: "Log, undo, or ask for a count. Automations can fire any of them without you."
+                detail: "Log, undo, or ask for a count. An automation can fire any of them without you."
             )
 
-        case .export:
+        case .data:
             return GuideTopic(
-                .export,
-                title: "Export",
+                .data,
+                title: "Import & Export",
                 symbol: "square.and.arrow.up",
-                blurb: "Everything you've logged, out as a file, whenever you want.",
-                detail: "Plain, readable, yours. Import is on its way."
+                blurb: "Your whole log, out as a file — and back in again.",
+                detail: "Plain, readable, yours. Found under Settings."
             )
         }
     }
 
     /// Order and grouping of the Guide screen.
     static let sections: [GuideSection] = [
-        GuideSection(title: "Basics", topics: [.orbs, .sockets, .dayRail]),
-        GuideSection(title: "Keeping Time", topics: [.targets, .whenever, .streaks]),
+        GuideSection(title: "Basics", topics: [.orbs, .sockets, .dayRail, .star]),
+        GuideSection(title: "Keeping Time", topics: [.targets, .whenever, .streaks, .dayStart]),
         GuideSection(title: "Details", topics: [.notes, .glint, .tags, .hiding, .shimmer]),
-        GuideSection(title: "Elsewhere", topics: [.widgets, .shortcuts, .export])
+        GuideSection(title: "Elsewhere", topics: [.widgets, .shortcuts, .data])
     ]
 }
 
@@ -222,19 +236,20 @@ enum GuideContent {
 
 #if DEBUG
 extension GuideContent {
-    /// Fails loudly if a topic was added but never placed in a section — which
-    /// would make it unreachable from the Guide screen without any visible sign.
-    /// Call once from the app's init, or from OrbLab.
+    /// Catches a topic that exists but was never placed in a section, which
+    /// would make it unreachable from the Guide with no visible sign. `assert`
+    /// compiles out of release builds — this is a check on you, not on the user.
+    /// Call once from the app's `init`.
     static func assertEveryTopicIsReachable() {
         let placed = sections.flatMap(\.topics)
         let placedSet = Set(placed)
 
         let orphans = Set(GuideTopicID.allCases).subtracting(placedSet)
         assert(orphans.isEmpty,
-               "Guide topics not in any section: \(orphans.map(\.rawValue).sorted())")
+               "Guide topics in no section: \(orphans.map(\.rawValue).sorted())")
 
         assert(placed.count == placedSet.count,
-               "Guide topic listed in more than one section.")
+               "A Guide topic is listed in more than one section.")
     }
 }
 #endif

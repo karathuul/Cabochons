@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var editing: Activity?
     @State private var creatingNew = false
     @State private var editingTag: Tag?
+    @State private var showingGuide = false
     @State private var creatingTag = false
     @State private var showingData = false
     /// Persisted so the sidebar doesn't re-expand every launch — the whole
@@ -68,6 +69,7 @@ struct ContentView: View {
                 store.update(updated)
             }
         }
+        .sheet(isPresented: $showingGuide) { GuideSheet() }
     }
 
     // MARK: Sidebar
@@ -246,6 +248,7 @@ struct ContentView: View {
                     Divider()
                     Text("A later start keeps late-night entries on the previous day.")
                     Divider()
+                    Button("Guide…") { showingGuide = true }
                     Button("Import & Export…") { showingData = true }
                 } label: {
                     Label("Settings", systemImage: "gearshape")

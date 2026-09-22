@@ -1,26 +1,40 @@
+// MARK: - GuideView
+// Renders the copy in Guide.swift. Four pieces:
 //
-//  GuideView.swift
+//   GuideSheet      – what Settings presents. Matches DataSheet's shape:
+//                     a NavigationStack with a Done button.
+//   GuideView       – the list itself. Rows expand in place rather than
+//                     pushing a detail view, so it reads as one page.
+//   GuideTopicCard  – one topic, standalone. Shared with the ⓘ sheet so the
+//                     two surfaces can't drift apart.
+//   GuideInfoButton – a small ⓘ presenting a single topic. This is the
+//                     layer-two primitive; nothing calls it yet.
 //
-//  MARK: - Overview
-//  Renders the copy in Guide.swift. Three pieces:
+// Holds no reference to LogStore on purpose. The Guide is static content and
+// has no business touching the data layer.
 //
-//    GuideView       – the full browsable Guide screen. Rows expand in place
-//                      rather than pushing a detail view, so the whole thing
-//                      reads as one page on both platforms.
-//    GuideTopicCard  – one topic, standalone. Reused by the ⓘ sheet so the
-//                      two surfaces can never drift apart.
-//    GuideInfoButton – a small ⓘ that presents a single topic as a sheet.
-//                      This is the layer-2 primitive; nothing calls it yet.
-//
-//  Deliberately holds no reference to LogStore. The Guide is static content
-//  and has no business touching the data layer.
-//
-//  TARGET MEMBERSHIP: app target only.
-//
+// TARGET MEMBERSHIP: app target only.
 
 internal import SwiftUI
 
-// MARK: - Guide screen
+// MARK: - Sheet
+
+struct GuideSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            GuideView()
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+        }
+    }
+}
+
+// MARK: - The list
 
 struct GuideView: View {
     @State private var expanded: Set<GuideTopicID> = []
@@ -39,9 +53,10 @@ struct GuideView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(Chrome.panel)
         .navigationTitle("Guide")
         #if os(iOS)
-        .listStyle(.insetGrouped)
         .navigationBarTitleDisplayMode(.inline)
         #endif
     }
@@ -68,42 +83,44 @@ private struct GuideRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
                 Image(systemName: topic.symbol)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22, alignment: .center)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Chrome.steelHi)
+                    .frame(width: 26)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(topic.title)
-                        .font(.headline)
+                        .font(.system(.body, design: .rounded, weight: .medium))
+
                     Text(topic.blurb)
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
 
                 if hasDetail {
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.tertiary)
-                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .accessibilityHidden(true)
                 }
             }
 
             if isExpanded, let detail = topic.detail {
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 34)
+                    .padding(.leading, 38)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
+        // Without this the row only answers taps on the glyphs themselves.
         .contentShape(Rectangle())
         .onTapGesture { if hasDetail { toggle() } }
         .accessibilityElement(children: .combine)
@@ -112,7 +129,7 @@ private struct GuideRow: View {
     }
 }
 
-// MARK: - Standalone card (shared with the ⓘ sheet)
+// MARK: - Standalone card, shared with the ⓘ sheet
 
 struct GuideTopicCard: View {
     let topic: GuideTopic
@@ -121,19 +138,20 @@ struct GuideTopicCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 Image(systemName: topic.symbol)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 17))
+                    .foregroundStyle(Chrome.steelHi)
+
                 Text(topic.title)
-                    .font(.title3.weight(.semibold))
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
             }
 
             Text(topic.blurb)
-                .font(.body)
+                .font(.system(.body, design: .rounded))
                 .fixedSize(horizontal: false, vertical: true)
 
             if let detail = topic.detail {
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -142,7 +160,7 @@ struct GuideTopicCard: View {
     }
 }
 
-// MARK: - Inline ⓘ button (layer 2 — not yet wired to any call site)
+// MARK: - Inline ⓘ — layer two, not yet wired to any call site
 
 struct GuideInfoButton: View {
     let id: GuideTopicID
@@ -155,7 +173,7 @@ struct GuideInfoButton: View {
             isPresented = true
         } label: {
             Image(systemName: "info.circle")
-                .font(.footnote)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .buttonStyle(.plain)
@@ -166,6 +184,8 @@ struct GuideInfoButton: View {
                     GuideTopicCard(topic: GuideContent.topic(id))
                         .padding(20)
                 }
+                .scrollContentBackground(.hidden)
+                .background(Chrome.panel)
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Done") { isPresented = false }
@@ -180,7 +200,7 @@ struct GuideInfoButton: View {
 // MARK: - Previews
 
 #Preview("Guide") {
-    NavigationStack { GuideView() }
+    GuideSheet()
 }
 
 #Preview("Single topic") {
