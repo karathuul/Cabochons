@@ -7,6 +7,8 @@
 //                     pushing a detail view, so it reads as one page.
 //   GuideTopicCard  – one topic, standalone. Shared with the ⓘ sheet so the
 //                     two surfaces can't drift apart.
+//   GuideExampleList – worked examples as "trigger ↳ action" pairs. Used by
+//                     both the expanded row and the card.
 //   GuideInfoButton – a small ⓘ presenting a single topic. This is the
 //                     layer-two primitive; nothing calls it yet.
 //
@@ -79,7 +81,7 @@ private struct GuideRow: View {
     let isExpanded: Bool
     let toggle: () -> Void
 
-    private var hasDetail: Bool { topic.detail != nil }
+    private var hasDetail: Bool { topic.hasMore }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -110,13 +112,20 @@ private struct GuideRow: View {
                 }
             }
 
-            if isExpanded, let detail = topic.detail {
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 38)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 10) {
+                    if let detail = topic.detail {
+                        Text(detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if !topic.examples.isEmpty {
+                        GuideExampleList(examples: topic.examples)
+                    }
+                }
+                .padding(.leading, 38)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(.vertical, 3)
@@ -155,8 +164,42 @@ struct GuideTopicCard: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            if !topic.examples.isEmpty {
+                GuideExampleList(examples: topic.examples)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Worked examples
+
+struct GuideExampleList: View {
+    let examples: [GuideExample]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            ForEach(examples, id: \.self) { example in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(example.trigger)
+                        .font(.system(.caption, design: .rounded, weight: .semibold))
+
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Chrome.steelHi)
+                        Text(example.action)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityElement(children: .ignore)
+                // "When you Sunday, 8 PM" was the first draft. Keep it dumb.
+                .accessibilityLabel("\(example.trigger), then \(example.action)")
+            }
+        }
     }
 }
 

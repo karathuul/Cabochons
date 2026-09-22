@@ -2,7 +2,9 @@
 // Every word of in-app help, in one place. `GuideTopicID` is the key and
 // `GuideContent.topic(_:)` is an exhaustive switch over it, so adding a case
 // refuses to compile until its copy exists — no silently blank help rows.
-// `sections` decides what the Guide screen shows and in what order.
+// `sections` decides what the Guide screen shows and in what order. A topic
+// may carry worked examples (a trigger and what it does), shown when the
+// row is expanded.
 //
 // One topic, several surfaces: the Guide sheet, an inline ⓘ, and later the
 // body of a tip. The copy is written once, here, never at a call site.
@@ -30,12 +32,21 @@ enum GuideTopicID: String, CaseIterable, Identifiable {
     case shimmer
     case widgets
     case shortcuts
+    case automations
     case data
 
     var id: String { rawValue }
 }
 
 // MARK: - Models
+
+/// A worked example: something that happens, and what the app does about it.
+struct GuideExample: Hashable {
+    /// The cause. "Leave the gym."
+    let trigger: String
+    /// The effect. "Log a jewel on Exercise."
+    let action: String
+}
 
 struct GuideTopic: Identifiable, Hashable {
     let id: GuideTopicID
@@ -47,17 +58,24 @@ struct GuideTopic: Identifiable, Hashable {
     let blurb: String
     /// Optional second beat, for whoever tapped in wanting more.
     let detail: String?
+    /// Worked examples, shown after the detail. Most topics have none.
+    let examples: [GuideExample]
+
+    /// True when there's anything beyond the blurb worth expanding into.
+    var hasMore: Bool { detail != nil || !examples.isEmpty }
 
     init(_ id: GuideTopicID,
          title: String,
          symbol: String,
          blurb: String,
-         detail: String? = nil) {
+         detail: String? = nil,
+         examples: [GuideExample] = []) {
         self.id = id
         self.title = title
         self.symbol = symbol
         self.blurb = blurb
         self.detail = detail
+        self.examples = examples
     }
 }
 
@@ -208,8 +226,29 @@ enum GuideContent {
                 .shortcuts,
                 title: "Shortcuts & Siri",
                 symbol: "mic.fill",
-                blurb: "Log a jewel by voice, or hand one to an automation.",
-                detail: "Log, undo, or ask for a count. An automation can fire any of them without you."
+                blurb: "Log, undo, or ask for a count — out loud.",
+                detail: "Every action also shows up in the Shortcuts app, ready to build with."
+            )
+
+        case .automations:
+            return GuideTopic(
+                .automations,
+                title: "Automations",
+                symbol: "bolt.fill",
+                blurb: "Let something else press the orb for you.",
+                detail: "Build these in the Shortcuts app, under Automation. A few to steal:",
+                examples: [
+                    GuideExample(trigger: "Leave the gym",
+                                 action: "Log a jewel on Exercise"),
+                    GuideExample(trigger: "Stop the morning alarm",
+                                 action: "Log a jewel on Up Early"),
+                    GuideExample(trigger: "Tap an NFC sticker on the piano",
+                                 action: "Log a jewel on Practice"),
+                    GuideExample(trigger: "Double-tap the back of the phone",
+                                 action: "Undo the last jewel"),
+                    GuideExample(trigger: "Sunday, 8 PM",
+                                 action: "Speak this week's count for Reading")
+                ]
             )
 
         case .data:
@@ -228,7 +267,7 @@ enum GuideContent {
         GuideSection(title: "Basics", topics: [.orbs, .sockets, .dayRail, .star]),
         GuideSection(title: "Keeping Time", topics: [.targets, .whenever, .streaks, .dayStart]),
         GuideSection(title: "Details", topics: [.notes, .glint, .tags, .hiding, .shimmer]),
-        GuideSection(title: "Elsewhere", topics: [.widgets, .shortcuts, .data])
+        GuideSection(title: "Elsewhere", topics: [.widgets, .shortcuts, .automations, .data])
     ]
 }
 
