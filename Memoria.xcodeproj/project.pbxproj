@@ -20,6 +20,7 @@
 		74D2550230605EBE00DFFAF3 /* HistoryYearPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */; };
 		74D25504306068CF00DFFAF3 /* Guide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D25503306068CB00DFFAF3 /* Guide.swift */; };
 		74D25506306068FD00DFFAF3 /* GuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D25505306068F900DFFAF3 /* GuideView.swift */; };
+		74D25508306241A900DFFAF3 /* Wordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D25507306241A400DFFAF3 /* Wordmark.swift */; };
 		74E5ADA13043E4E5007B24DB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD5E30409D4D007B24DB /* WidgetKit.framework */; };
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* MemoriaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* MemoriaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -85,6 +86,7 @@
 		74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryYearPanel.swift; sourceTree = "<group>"; };
 		74D25503306068CB00DFFAF3 /* Guide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Guide.swift; sourceTree = "<group>"; };
 		74D25505306068F900DFFAF3 /* GuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideView.swift; sourceTree = "<group>"; };
+		74D25507306241A400DFFAF3 /* Wordmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wordmark.swift; sourceTree = "<group>"; };
 		74E5AD5E30409D4D007B24DB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		74E5ADA03043E4E5007B24DB /* MemoriaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MemoriaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -225,6 +227,7 @@
 		74E5ADF33043FAF4007B24DB /* Memoria */ = {
 			isa = PBXGroup;
 			children = (
+				74D25507306241A400DFFAF3 /* Wordmark.swift */,
 				74D25505306068F900DFFAF3 /* GuideView.swift */,
 				74D25503306068CB00DFFAF3 /* Guide.swift */,
 				74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */,
@@ -363,6 +366,7 @@
 				74CF365030584DF100694277 /* Datasheet.swift in Sources */,
 				74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */,
 				74D254FF305F0D0800DFFAF3 /* MilestoneCenter.swift in Sources */,
+				74D25508306241A900DFFAF3 /* Wordmark.swift in Sources */,
 				74D2550230605EBE00DFFAF3 /* HistoryYearPanel.swift in Sources */,
 				74D25506306068FD00DFFAF3 /* GuideView.swift in Sources */,
 				74D254FD305F03DB00DFFAF3 /* Haptics.swift in Sources */,

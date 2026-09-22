@@ -221,7 +221,7 @@ struct ContentView: View {
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(Chrome.panel)
-        .navigationTitle("Memoria")
+        .wordmarkTitle("Memoria", fontName: "Didot-Bold", height: 36)
         #if os(macOS)
         .frame(minWidth: 250)
         #endif
