@@ -76,11 +76,11 @@ struct ExportDataButton: View {
         )
     }
 
-    /// e.g. "MateriaLog-2026-09-08.json"
+    /// e.g. "MemoriaLog-2026-09-08.json"
     private static func defaultFilename() -> String {
         let stamp = Date.now.formatted(
             .iso8601.year().month().day().dateSeparator(.dash)
         )
-        return "MateriaLog-\(stamp)"
+        return "MemoriaLog-\(stamp)"
     }
 }

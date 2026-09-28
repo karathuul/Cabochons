@@ -1,7 +1,8 @@
 // MARK: - ContentView
 // The app's root split view. The sidebar lists Today, tags (each wearing its
 // chosen symbol over a small period rail) and activities; the detail pane
-// shows the day, one activity, or the day narrowed to a tag.
+// shows the day, one activity, or the day narrowed to a tag. The New and
+// Settings menus sit in the wordmark's header row (the toolbar on the Mac).
 
 internal import SwiftUI
 
@@ -221,39 +222,48 @@ struct ContentView: View {
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(Chrome.panel)
-        .wordmarkTitle("Memoria", fontName: "Didot-Bold", height: 36)
+        .wordmarkTitle("Cabochons", asset: "Wordmark") {
+            newMenu
+            settingsMenu
+        }
         #if os(macOS)
         .frame(minWidth: 250)
         #endif
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                // No `primaryAction`: with one, iOS runs it on tap and only
-                // reveals the menu on a long press, which hides "New tag"
-                // from anyone who hasn't read the docs.
-                Menu {
-                    Button("New activity", systemImage: "circle.fill") { creatingNew = true }
-                    Button("New tag", systemImage: "tag") { creatingTag = true }
-                        .disabled(store.activities.isEmpty)
-                } label: {
-                    Label("New", systemImage: "plus")
+    }
+
+    // MARK: Header menus
+
+    /// Beside the wordmark on iOS, in the toolbar on the Mac.
+    ///
+    /// No `primaryAction`: with one, iOS runs it on tap and only reveals the
+    /// menu on a long press, which hides "New tag" from anyone who hasn't
+    /// read the docs.
+    private var newMenu: some View {
+        Menu {
+            Button("New activity", systemImage: "circle.fill") { creatingNew = true }
+            Button("New tag", systemImage: "tag") { creatingTag = true }
+                .disabled(store.activities.isEmpty)
+        } label: {
+            Label("New", systemImage: "plus")
+        }
+    }
+
+    private var settingsMenu: some View {
+        @Bindable var store = store
+
+        return Menu {
+            Picker("Day starts at", selection: $store.dayStartHour) {
+                ForEach([0, 3, 4, 5, 6], id: \.self) { hour in
+                    Text(hour == 0 ? "Midnight" : "\(hour):00 AM").tag(hour)
                 }
             }
-            ToolbarItem {
-                Menu {
-                    Picker("Day starts at", selection: $store.dayStartHour) {
-                        ForEach([0, 3, 4, 5, 6], id: \.self) { hour in
-                            Text(hour == 0 ? "Midnight" : "\(hour):00 AM").tag(hour)
-                        }
-                    }
-                    Divider()
-                    Text("A later start keeps late-night entries on the previous day.")
-                    Divider()
-                    Button("Guide…") { showingGuide = true }
-                    Button("Import & Export…") { showingData = true }
-                } label: {
-                    Label("Settings", systemImage: "gearshape")
-                }
-            }
+            Divider()
+            Text("A later start keeps late-night entries on the previous day.")
+            Divider()
+            Button("Guide…") { showingGuide = true }
+            Button("Import & Export…") { showingData = true }
+        } label: {
+            Label("Settings", systemImage: "gearshape")
         }
     }
 }

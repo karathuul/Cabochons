@@ -11,7 +11,7 @@ internal import Foundation
 /// match in all three places (here and both entitlements) exactly, or the
 /// container URL comes back nil and the widget falls back to an empty read.
 enum AppGroup {
-    static let identifier = "group.kitty.beautiful.Memoria"
+    static let identifier = "group.com.qibasin.Memoria"
 }
 
 /// On-disk shape. Versioned so the format can change later without guessing.

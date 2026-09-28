@@ -1,3 +1,9 @@
+// MARK: - DayView
+// The day-centric screen: today's rail, the loadout of orb buttons, and the
+// panels below them (tags, what's due this period, numbers, history). Given a
+// tag scope, it narrows to that tag's members and counts in the tag's own
+// periods. Titled with the wordmark, like the sidebar.
+
 internal import SwiftUI
 
 /// The day-centric screen. Every jewel earned today sits on one rail in the
@@ -41,9 +47,16 @@ struct DayView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Chrome.panel.ignoresSafeArea())
-        .navigationTitle(tag?.name ?? "Today")
+        // Same header as the sidebar, led by a back button on iPhone, where
+        // the header replaces the bar. Tags have no colour of their own, so
+        // a scoped day keeps the house colour rather than borrowing a
+        // member's.
+        .wordmarkTitle(tag?.name ?? "Today", backButton: true)
         .sensoryFeedback(.impact(weight: .medium), trigger: pulse)
         //TODO share from here?
+        // NOTE: if this comes back, pass the ShareLink to wordmarkTitle as an
+        // accessory instead. The bar is hidden on iPhone, so toolbar items
+        // placed here would never show.
 //        .toolbar {
 //            ToolbarItem {
 //                ShareLink(item: store.exportCSV()) {
