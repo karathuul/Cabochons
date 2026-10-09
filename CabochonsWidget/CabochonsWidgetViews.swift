@@ -42,7 +42,7 @@ private struct SmallHomeView: View {
                     Text("\(entry.todayCount)")
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(entry.isMastered ? Chrome.gold : .white)
+                        .foregroundStyle(entry.isCompleted ? Chrome.gold : .white)
                     if entry.capacity > 0 {
                         Text("/ \(entry.capacity)")
                             .font(.system(size: 16, weight: .medium, design: .rounded))
@@ -78,7 +78,7 @@ private struct MediumHomeView: View {
                     Text("\(entry.todayCount)")
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(entry.isMastered ? Chrome.gold : .white)
+                        .foregroundStyle(entry.isCompleted ? Chrome.gold : .white)
                     if entry.capacity > 0 {
                         Text("/ \(entry.capacity)")
                             .font(.system(size: 15, weight: .medium, design: .rounded))

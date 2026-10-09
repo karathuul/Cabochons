@@ -116,9 +116,9 @@
 			membershipExceptions = (
 				Activityentity.swift,
 				Activitystatintent.swift,
+				CabochonsShortcuts.swift,
 				Intentbridge.swift,
 				Logjewelintent.swift,
-				CabochonsShortcuts.swift,
 			);
 			target = 748DB294302CF5B6006C16FD /* Cabochons */;
 		};

@@ -195,7 +195,7 @@ struct ActivityDetailView: View {
 
             if let current, current.isMet {
                 Label(
-                    current.overflow > 0 ? "Mastered — \(current.overflow) over" : "Mastered",
+                    current.overflow > 0 ? "Completed — \(current.overflow) over" : "Completed",
                     systemImage: "star.fill"
                 )
                 .font(.system(.caption, design: .rounded, weight: .semibold))
@@ -264,7 +264,7 @@ struct ActivityDetailView: View {
                 if !stats.isOpenEnded {
                     StreakBadge(
                         streak: stats.currentStreak,
-                        today: stats.currentCount,
+                        current: stats.current,
                         accent: activity.color.core,
                         unit: stats.cadence.unit.label(count: 2)
                     )
@@ -321,7 +321,7 @@ struct ActivityDetailView: View {
             }
             StatTile(label: "Logged", value: "\(stats.periodsLogged)", unit: unit)
             if !stats.isOpenEnded {
-                StatTile(label: "Mastered", value: "\(stats.periodsMet)", unit: unit)
+                StatTile(label: "Completed", value: "\(stats.periodsMet)", unit: unit)
             }
             StatTile(label: "Average", value: String(format: "%.1f", stats.average))
         }

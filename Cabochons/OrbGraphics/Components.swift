@@ -568,13 +568,15 @@ struct StatTile: View {
 
 struct StreakBadge: View {
     let streak: Int
-    let today: Int
+    /// The period that would extend the streak. Until it keeps the streak,
+    /// the badge reads as at risk.
+    let current: PeriodSummary?
     let accent: Color
     /// "days", "weeks", "months" — a streak counts periods, not days.
     var unit: String = "days"
 
     var body: some View {
-        let atRisk = Stats.streakAtRisk(currentStreak: streak, today: today)
+        let atRisk = Stats.streakAtRisk(currentStreak: streak, current: current)
 
         HStack(spacing: 8) {
             Image(systemName: streak > 0 ? "flame.fill" : "flame")
@@ -596,7 +598,7 @@ struct StreakBadge: View {
         if streak == 0 { return "no streak" }
         let singular = String(unit.dropLast())
         return atRisk
-            ? "\(singular) streak — nothing yet"
+            ? "\(singular) streak — not kept yet"
             : "\(singular) streak"
     }
 }

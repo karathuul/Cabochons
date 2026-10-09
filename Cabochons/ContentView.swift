@@ -1,7 +1,8 @@
 // MARK: - ContentView
-// The app's root split view. The sidebar lists Today, tags (each wearing its
-// chosen symbol over a small period rail) and activities; the detail pane
-// shows the day, one activity, or the day narrowed to a tag. The New and
+// The app's root split view. The sidebar lists the calendar spans (Today,
+// this week, this month, this year), tags (each wearing its chosen symbol over
+// a small period rail) and activities; the detail pane shows a span, one
+// activity, or the day narrowed to a tag. The New and
 // Settings menus sit in the wordmark's header row (the toolbar on the Mac).
 
 internal import SwiftUI
@@ -9,15 +10,18 @@ internal import SwiftUI
 /// Sidebar destinations. The day is now a first-class place, not something you
 /// reach through an activity.
 enum Route: Hashable {
-    case day
+    /// The day view over every activity, for one calendar span.
+    case span(Scope.Span)
     case activity(Activity.ID)
     /// The day view, narrowed to one tag's members.
     case tag(Tag.ID)
+
+    static let today = Route.span(.day)
 }
 
 struct ContentView: View {
     @Environment(LogStore.self) private var store
-    @State private var selection: Route? = .day
+    @State private var selection: Route? = .today
     @State private var editing: Activity?
     @State private var creatingNew = false
     @State private var editingTag: Tag?
@@ -33,17 +37,19 @@ struct ContentView: View {
             sidebar
         } detail: {
             switch selection {
-            case .day, .none:
+            case .none:
                 DayView()
+            case .span(let span):
+                DayView(span: span).id(span)
             case .activity(let id):
                 if store.activity(id) != nil {
-                    ActivityDetailView(activityID: id, onDelete: { selection = .day }).id(id)
+                    ActivityDetailView(activityID: id, onDelete: { selection = .today }).id(id)
                 } else {
                     DayView()
                 }
             case .tag(let id):
                 if store.tag(id) != nil {
-                    DayView(scope: id).id(id)
+                    DayView(tagID: id).id(id)
                 } else {
                     DayView()
                 }
@@ -80,8 +86,10 @@ struct ContentView: View {
 
         return List(selection: $selection) {
             Section {
-                TodayRow()
-                    .tag(Route.day)
+                ForEach(Scope.Span.allCases, id: \.self) { span in
+                    SpanRow(span: span)
+                        .tag(Route.span(span))
+                }
             }
             
             // Tags only make sense once there's something to tag.
@@ -104,7 +112,7 @@ struct ContentView: View {
                                     Button("Edit") { editingTag = tag }
                                     Divider()
                                     Button("Delete", role: .destructive) {
-                                        if selection == .tag(tag.id) { selection = .day }
+                                        if selection == .tag(tag.id) { selection = .today }
                                         store.delete(tag: tag.id)
                                     }
                                 }
@@ -116,7 +124,7 @@ struct ContentView: View {
                                 // the first action here deletes.
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button("Delete", role: .destructive) {
-                                        if selection == .tag(tag.id) { selection = .day }
+                                        if selection == .tag(tag.id) { selection = .today }
                                         store.delete(tag: tag.id)
                                     }
                                     Button("Edit") { editingTag = tag }
@@ -162,7 +170,7 @@ struct ContentView: View {
                                 Button("Hide") { store.setHidden(activity.id, true) }
                                 Divider()
                                 Button("Delete", role: .destructive) {
-                                    if selection == .activity(activity.id) { selection = .day }
+                                    if selection == .activity(activity.id) { selection = .today }
                                     store.delete(activity.id)
                                 }
                             }
@@ -181,7 +189,7 @@ struct ContentView: View {
                                     Button("Unhide") { store.setHidden(activity.id, false) }
                                     Divider()
                                     Button("Delete", role: .destructive) {
-                                        if selection == .activity(activity.id) { selection = .day }
+                                        if selection == .activity(activity.id) { selection = .today }
                                         store.delete(activity.id)
                                     }
                                 }
@@ -270,21 +278,24 @@ struct ContentView: View {
 
 // MARK: - Sidebar rows
 
-private struct TodayRow: View {
+/// Today, this week, this month or this year: every activity's jewels in the
+/// span's current period, against what they all ask for in it.
+private struct SpanRow: View {
     @Environment(LogStore.self) private var store
+    let span: Scope.Span
 
     var body: some View {
-        let stats = store.combined
-        let fills = stats.today?.fills ?? []
+        let progress = store.progress(for: store.scope(span))
+        let fills = progress.fills
 
         HStack(spacing: 12) {
-            Image(systemName: "square.grid.2x2.fill")
+            Image(systemName: span.symbol)
                 .font(.system(size: 15))
-                .foregroundStyle(Chrome.steelHi)
+                .foregroundStyle(progress.isMet ? Chrome.gold : Chrome.steelHi)
                 .frame(width: 26)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Today")
+                Text(span.name)
                     .font(.system(.body, design: .rounded, weight: .medium))
 
                 if fills.isEmpty {
@@ -292,16 +303,16 @@ private struct TodayRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    SlotRail(fills: fills, capacity: stats.capacity, size: 9, maxSlots: 14)
+                    SlotRail(fills: fills, capacity: progress.target, size: 9, maxSlots: 14)
                 }
             }
 
             Spacer(minLength: 4)
 
-            Text("\(fills.count)")
+            Text(progress.target > 0 ? "\(fills.count)/\(progress.target)" : "\(fills.count)")
                 .font(.system(.caption, design: .rounded, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(progress.isMet ? Chrome.gold : .secondary)
         }
         .padding(.vertical, 3)
     }

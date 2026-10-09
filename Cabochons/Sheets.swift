@@ -784,42 +784,40 @@ private struct FieldLabel: View {
     }
 }
 
-// MARK: - Day detail
-
-/// Every jewel logged on one calendar day, newest first. Used by the combined
-/// day view, where the day is the unit regardless of anyone's cadence.
-struct DayEntriesSheet: View {
-    @Environment(LogStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
-
-    let day: Date
-    let capacity: Int
-
-    var body: some View {
-        let entries = store.entries(on: day)
-        EntryList(
-            title: store.calc.label(for: day),
-            subtitle: day.formatted(.dateTime.weekday(.wide).month(.wide).day().year()),
-            entries: entries,
-            capacity: capacity,
-            dismiss: { dismiss() }
-        )
-    }
-}
-
 // MARK: - Period detail
 
-/// Every jewel one activity logged in one turn of its cadence.
+/// Every jewel logged in one turn of a cadence — by one activity, or by every
+/// member of a scope (a day of Today, a week of a tag).
 struct PeriodEntriesSheet: View {
     @Environment(LogStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
     let period: PeriodSummary
     let title: String
-    let activityID: UUID
+    private let source: Source
+
+    private enum Source {
+        case activity(UUID)
+        case scope(Scope)
+    }
+
+    init(period: PeriodSummary, title: String, activityID: UUID) {
+        self.period = period
+        self.title = title
+        self.source = .activity(activityID)
+    }
+
+    init(period: PeriodSummary, title: String, scope: Scope) {
+        self.period = period
+        self.title = title
+        self.source = .scope(scope)
+    }
 
     var body: some View {
-        let entries = store.entries(in: period, activityID: activityID)
+        let entries = switch source {
+        case .activity(let id): store.entries(in: period, activityID: id)
+        case .scope(let scope): store.entries(in: period, scope: scope)
+        }
         EntryList(
             title: title,
             subtitle: span,

@@ -17,18 +17,22 @@ struct CabochonsEntry: TimelineEntry {
     var fraction: Double {
         capacity > 0 ? min(1, Double(todayCount) / Double(capacity)) : 0
     }
-    var isMastered: Bool { capacity > 0 && todayCount >= capacity }
+    var isCompleted: Bool { capacity > 0 && todayCount >= capacity }
 
     static func build(from file: LogFile, date: Date = .now) -> CabochonsEntry {
         let calc = DayCalculator(dayStartHour: file.dayStartHour)
-        let combined = Stats.combine(activities: file.activities, calc: calc)
+        let today = Stats.compute(for: Scope(.day, activities: file.activities, calc: calc), activities: file.activities, calc: calc)
         return CabochonsEntry(
             date: date,
-            todayCount: combined.todayCount,
-            capacity: combined.capacity,
-            streak: combined.currentStreak,
-            fills: combined.today?.fills ?? [],
-            progress: combined.progress,
+            todayCount: today.currentCount,
+            capacity: today.target,
+            streak: today.currentStreak,
+            fills: today.current?.fills ?? [],
+            // Jewels from hidden activities stay on the rail — they were
+            // earned. Only the forward-looking list drops them.
+            progress: file.activities
+                .filter { !$0.isHidden }
+                .map { Stats.progress(for: $0, calc: calc) },
             hasActivities: !file.activities.filter { !$0.isHidden }.isEmpty
         )
     }

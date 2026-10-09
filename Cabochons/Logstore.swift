@@ -48,9 +48,46 @@ final class LogStore : Observable {
         Stats.compute(for: activity, calc: calc)
     }
 
-    /// Every activity folded onto one day rail.
-    var combined: CombinedStats {
-        Stats.combine(activities: activities, tags: tags, calc: calc)
+    // MARK: Scopes
+
+    /// A tag's scope. A tag ID that no longer exists falls back to Today.
+    func scope(_ tagID: Tag.ID?) -> Scope {
+        tag(tagID).map(Scope.init) ?? todayScope
+    }
+
+    /// Every activity, over one calendar span.
+    func scope(_ span: Scope.Span) -> Scope {
+        Scope(span, activities: activities, calc: calc)
+    }
+
+    var todayScope: Scope {
+        scope(.day)
+    }
+
+    func stats(for scope: Scope) -> PeriodStats {
+        Stats.compute(for: scope, activities: activities, calc: calc)
+    }
+
+    func progress(for scope: Scope) -> ScopeProgress {
+        Stats.progress(for: scope, activities: activities, calc: calc)
+    }
+
+    func progress(for tag: Tag) -> ScopeProgress {
+        progress(for: Scope(tag))
+    }
+
+    func stats(for tag: Tag) -> PeriodStats {
+        stats(for: Scope(tag))
+    }
+
+    /// Members that still have a button: visible ones, in sidebar order.
+    func visibleMembers(of scope: Scope) -> [Activity] {
+        scope.visibleMembers(of: activities)
+    }
+
+    /// Sockets today's rail has for this scope.
+    func dailyCapacity(for scope: Scope) -> Int {
+        scope.dailyCapacity(of: activities, calc: calc)
     }
 
     // MARK: Tags
@@ -63,36 +100,6 @@ final class LogStore : Observable {
     /// Every tag this activity belongs to, in tag order.
     func tags(containing id: Activity.ID) -> [Tag] {
         tags.filter { $0.contains(id) }
-    }
-
-    /// Members that still have a button: visible ones, in sidebar order.
-    func visibleMembers(of tag: Tag) -> [Activity] {
-        visibleActivities.filter { tag.contains($0.id) }
-    }
-
-    func progress(for tag: Tag) -> TagProgress {
-        Stats.progress(for: tag, activities: activities, calc: calc)
-    }
-
-    func stats(for tag: Tag) -> PeriodStats {
-        Stats.compute(for: tag, activities: activities, calc: calc)
-    }
-
-    /// Sockets the day has *for this tag*: daily targets of its visible
-    /// members. Same reasoning as `dailyCapacity`, narrowed.
-    func dailyCapacity(for tag: Tag) -> Int {
-        visibleMembers(of: tag)
-            .filter { $0.cadence.isDaily }
-            .reduce(0) { $0 + $1.target }
-    }
-
-    /// Sockets the day has, from visible daily activities only. A monthly
-    /// activity owes nothing in particular today, and a hidden one owes nothing
-    /// at all.
-    var dailyCapacity: Int {
-        activities
-            .filter { $0.cadence.isDaily && !$0.isHidden }
-            .reduce(0) { $0 + $1.target }
     }
 
     func todayCount(for activity: Activity) -> Int {
@@ -140,10 +147,20 @@ final class LogStore : Observable {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
-    /// Newest first, from a tag's members only. `nil` tag means everything,
-    /// so a scoped and an unscoped day view can share one call.
-    func entries(on day: Date, in tag: Tag?) -> [LoggedJewel] {
-        entries(on: day).filter { tag?.contains($0.activityID) ?? true }
+    /// Newest first, from a scope's members only.
+    func entries(on day: Date, in scope: Scope) -> [LoggedJewel] {
+        entries(on: day).filter { scope.contains($0.activityID) }
+    }
+
+    /// Newest first, from a scope's members within one of its periods.
+    func entries(in period: PeriodSummary, scope: Scope) -> [LoggedJewel] {
+        allEntries()
+            .filter {
+                scope.contains($0.activityID)
+                    && $0.timestamp >= period.start
+                    && $0.timestamp < period.end
+            }
+            .sorted { $0.timestamp > $1.timestamp }
     }
 
     /// Newest first, for one activity within one turn of its cadence.
@@ -270,9 +287,9 @@ final class LogStore : Observable {
         entries(on: calc.today).first
     }
 
-    /// Same, narrowed to a tag's members. `nil` is the unscoped case.
-    func mostRecentToday(in tag: Tag?) -> LoggedJewel? {
-        entries(on: calc.today, in: tag).first
+    /// Same, narrowed to a scope's members.
+    func mostRecentToday(in scope: Scope) -> LoggedJewel? {
+        entries(on: calc.today, in: scope).first
     }
 
     func remove(jewel: Jewel.ID, from id: Activity.ID) {
@@ -301,8 +318,8 @@ final class LogStore : Observable {
     /// Undo on a tag-scoped rail should pop the last jewel *on that rail*, not
     /// whatever was logged most recently anywhere.
     @discardableResult
-    func removeLastToday(in tag: Tag?) -> Bool {
-        guard let newest = entries(on: calc.today, in: tag).first else { return false }
+    func removeLastToday(in scope: Scope) -> Bool {
+        guard let newest = entries(on: calc.today, in: scope).first else { return false }
         remove(jewel: newest.id, from: newest.activityID)
         return true
     }

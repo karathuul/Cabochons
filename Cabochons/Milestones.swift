@@ -149,7 +149,7 @@ struct TagTargetDetector: MilestoneDetector {
                 .filter(\.isMet)
                 .map {
                     Milestone(
-                        key: "tag:\($0.tagID):period",
+                        key: "tag:\($0.tagID?.uuidString ?? ""):period",
                         weight: .init($0.cadence),
                         headline: "\($0.name) — target met"
                     )
@@ -158,18 +158,17 @@ struct TagTargetDetector: MilestoneDetector {
     }
 }
 
-/// Today's sockets, all of them. `CombinedDay` already knows what mastery
-/// means, so this asks rather than re-deriving it. Keyed by the day so it can
-/// re-fire tomorrow.
+/// Today's sockets, all of them — Today's own target, met. Keyed by the day
+/// so it can re-fire tomorrow.
 struct DayMasteryDetector: MilestoneDetector {
     func met(_ context: MilestoneContext) -> Set<Milestone> {
         let calc = context.store.calc
-        guard context.store.combined.today?.isMastered == true else { return [] }
+        guard context.store.progress(for: context.store.todayScope).isMet else { return [] }
 
         return [Milestone(
-            key: "day:\(calc.today.timeIntervalSince1970):mastered",
+            key: "day:\(calc.today.timeIntervalSince1970):completed",
             weight: .small,
-            headline: "Day mastered"
+            headline: "Day completed"
         )]
     }
 }

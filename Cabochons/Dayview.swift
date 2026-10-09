@@ -1,46 +1,49 @@
 // MARK: - DayView
 // The day-centric screen: today's rail, the loadout of orb buttons, and the
-// panels below them (tags, what's due this period, numbers, history). Given a
-// tag scope, it narrows to that tag's members and counts in the tag's own
-// periods. Titled with the wordmark, like the sidebar.
+// panels below them. Shown for a calendar span (Today, this week, this month,
+// this year) or narrowed to a tag. Spans and tags are both a `Scope`, so there
+// is one screen, not several that look alike. Titled with the wordmark.
 
 internal import SwiftUI
 
-/// The day-centric screen. Every jewel earned today sits on one rail in the
-/// order it was earned, colour-coded by activity.
+/// The day-centric screen for one scope. Every jewel earned today sits on one
+/// rail in the order it was earned, colour-coded by activity.
 ///
-/// With a `scope`, the same screen narrows to one tag: today's rail shows only
-/// that tag's members, the loadout offers only their orbs, and the numbers
-/// below switch from days to the tag's own periods — "this week" rather than
-/// "today", because that's the unit a tag is measured in.
+/// A span is the scope of every activity, measured against what they all ask
+/// for in that span. A tag is the scope of its members, measured against its
+/// own target and cadence. The panels are the same for all of them; only the
+/// units change — "this week" rather than "today" for anything weekly.
 struct DayView: View {
     @Environment(LogStore.self) private var store
 
-    /// When set, every panel narrows to this tag. Nil is the ordinary day.
-    var scope: Tag.ID? = nil
+    /// Which calendar span to show, when there's no tag.
+    var span: Scope.Span = .day
+    /// When set, every panel narrows to this tag instead.
+    var tagID: Tag.ID? = nil
 
     @State private var pulse = 0
-    @State private var inspecting: CombinedDay?
+    @State private var inspecting: PeriodSummary?
     @State private var noting: LoggedJewel?
 
     var body: some View {
-        let stats = store.combined
-        let tag = store.tag(scope)
+        let scope = currentScope
+        let stats = store.stats(for: scope)
 
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                todayPanel(stats, tag)
-                loadout(stats, tag)
-                if let tag {
-                    tagPeriodPanel(tag)
-                    tagStatsPanel(tag)
-                    tagHistory(tag)
-                } else {
-                    tagsPanel(stats)
-                    duePanel(stats)
-                    statsPanel(stats)
-                    history(stats)
+                todayPanel(scope)
+                loadout(scope, stats)
+                // A daily scope's period *is* today, and the rail above
+                // already shows it.
+                if !scope.cadence.isDaily {
+                    periodPanel(store.progress(for: scope))
                 }
+                if scope.isEverything {
+                    tagsPanel()
+                }
+                duePanel(scope)
+                statsPanel(scope, stats)
+                history(scope, stats)
             }
             .padding(20)
             .frame(maxWidth: 680, alignment: .leading)
@@ -51,7 +54,7 @@ struct DayView: View {
         // the header replaces the bar. Tags have no colour of their own, so
         // a scoped day keeps the house colour rather than borrowing a
         // member's.
-        .wordmarkTitle(tag?.name ?? "Today", backButton: true)
+        .wordmarkTitle(scope.name, backButton: true)
         .sensoryFeedback(.impact(weight: .medium), trigger: pulse)
         //TODO share from here?
         // NOTE: if this comes back, pass the ShareLink to wordmarkTitle as an
@@ -64,35 +67,41 @@ struct DayView: View {
 //                }
 //            }
 //        }
-        .sheet(item: $inspecting) { day in
-            DayEntriesSheet(day: day.day, capacity: day.capacity)
+        .sheet(item: $inspecting) { period in
+            let scope = currentScope
+            PeriodEntriesSheet(
+                period: period,
+                title: periodLabel(period, scope),
+                scope: scope
+            )
         }
         .sheet(item: $noting) { entry in
             NoteEditor(entry: entry)
         }
     }
 
-    // MARK: Scope helpers
+    // MARK: Helpers
 
-    /// Today's jewels, chronological, narrowed to the tag when there is one.
-    private func todayFills(_ stats: CombinedStats, _ tag: Tag?) -> [RailJewel] {
-        (stats.today?.entries ?? [])
-            .filter { tag?.contains($0.activityID) ?? true }
-            .map(\.rail)
+    private var currentScope: Scope {
+        tagID == nil ? store.scope(span) : store.scope(tagID)
     }
 
-    /// Activities that get a button on this screen.
-    private func loadoutActivities(_ tag: Tag?) -> [Activity] {
-        tag.map { store.visibleMembers(of: $0) } ?? store.visibleActivities
+    /// Today's jewels from the scope's members, chronological.
+    private func todayFills(_ scope: Scope) -> [RailJewel] {
+        store.entries(on: store.calc.today, in: scope).reversed().map(\.rail)
+    }
+
+    private func periodLabel(_ period: PeriodSummary, _ scope: Scope) -> String {
+        store.calc.periodLabel(index: period.index, cadence: scope.cadence, anchor: scope.anchor)
     }
 
     // MARK: The one rail
 
-    private func todayPanel(_ stats: CombinedStats, _ tag: Tag?) -> some View {
-        let fills = todayFills(stats, tag)
-        let capacity = tag.map { store.dailyCapacity(for: $0) } ?? stats.capacity
-        let members = loadoutActivities(tag)
-        let mastered = capacity > 0 && fills.count >= capacity
+    private func todayPanel(_ scope: Scope) -> some View {
+        let fills = todayFills(scope)
+        let capacity = store.dailyCapacity(for: scope)
+        let members = store.visibleMembers(of: scope)
+        let completed = capacity > 0 && fills.count >= capacity
         let overflow = max(0, fills.count - capacity)
 
         return VStack(alignment: .leading, spacing: 14) {
@@ -116,12 +125,12 @@ struct DayView: View {
             }
 
             if members.isEmpty && fills.isEmpty {
-                Text(emptyMessage(tag))
+                Text(emptyMessage(scope))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else if fills.isEmpty && capacity == 0 {
                 // Nothing daily is due and nothing's been logged, so there are
-                // no sockets to draw. Everything lives in the period list below.
+                // no sockets to draw. Everything lives in the period panels below.
                 Text("Nothing logged today.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -129,9 +138,9 @@ struct DayView: View {
                 SlotRail(fills: fills, capacity: capacity, size: 34)
                     .animation(.spring(response: 0.35, dampingFraction: 0.6), value: fills)
 
-                if mastered {
+                if completed {
                     Label(
-                        overflow > 0 ? "Mastered — \(overflow) over" : "Mastered",
+                        overflow > 0 ? "Completed — \(overflow) over" : "Completed",
                         systemImage: "star.fill"
                     )
                     .font(.system(.caption, design: .rounded, weight: .semibold))
@@ -142,23 +151,23 @@ struct DayView: View {
         .panel()
     }
 
-    private func emptyMessage(_ tag: Tag?) -> String {
-        if let tag {
-            return tag.activityIDs.isEmpty
-                ? "This tag has no activities yet. Edit it to add some."
-                : "Everything in this tag is hidden. Unhide one from the sidebar."
+    private func emptyMessage(_ scope: Scope) -> String {
+        if scope.isEverything {
+            return store.activities.isEmpty
+                ? "Create an activity and its jewels will land here."
+                : "Everything's hidden. Unhide one from the sidebar."
         }
-        return store.activities.isEmpty
-            ? "Create an activity and its jewels will land here."
-            : "Everything's hidden. Unhide one from the sidebar."
+        return scope.memberIDs?.isEmpty == true
+            ? "This tag has no activities yet. Edit it to add some."
+            : "Everything in this tag is hidden. Unhide one from the sidebar."
     }
 
     // MARK: Every button in one place
 
     @ViewBuilder
-    private func loadout(_ stats: CombinedStats, _ tag: Tag?) -> some View {
-        let activities = loadoutActivities(tag)
-        let todayCount = todayFills(stats, tag).count
+    private func loadout(_ scope: Scope, _ stats: PeriodStats) -> some View {
+        let activities = store.visibleMembers(of: scope)
+        let todayCount = todayFills(scope).count
 
         if !activities.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
@@ -167,7 +176,7 @@ struct DayView: View {
                         .font(.system(.headline, design: .rounded, weight: .semibold))
                     Spacer()
                     Button {
-                        noting = store.mostRecentToday(in: tag)
+                        noting = store.mostRecentToday(in: scope)
                     } label: {
                         Label("Note", systemImage: "square.and.pencil")
                             .font(.system(.caption, design: .rounded))
@@ -178,7 +187,7 @@ struct DayView: View {
                     .disabled(todayCount == 0)
 
                     Button {
-                        store.removeLastToday(in: tag)
+                        store.removeLastToday(in: scope)
                     } label: {
                         Label("Undo", systemImage: "arrow.uturn.backward")
                             .font(.system(.caption, design: .rounded))
@@ -199,73 +208,31 @@ struct DayView: View {
                         } logAndNote: {
                             store.slot(activity.id)
                             pulse += 1
-                            noting = store.mostRecentToday(in: tag)
+                            noting = store.mostRecentToday(in: scope)
                         }
                     }
                 }
 
-                if let tag {
-                    // A tag's streak is counted in its own periods, not days.
-                    let tagStats = store.stats(for: tag)
-                    StreakBadge(
-                        streak: tagStats.currentStreak,
-                        today: tagStats.currentCount,
-                        accent: activities.first?.color.core ?? Chrome.steelHi,
-                        unit: streakUnit(tag.cadence)
-                    )
-                    .padding(.top, 2)
-                } else {
-                    StreakBadge(
-                        streak: stats.currentStreak,
-                        today: stats.todayCount,
-                        accent: activities.first?.color.core ?? Chrome.steelHi
-                    )
-                    .padding(.top, 2)
-                }
+                // Counted in the scope's own periods: days for Today, weeks
+                // for this week, the tag's cadence for a tag.
+                StreakBadge(
+                    streak: stats.currentStreak,
+                    current: stats.current,
+                    accent: activities.first?.color.core ?? Chrome.steelHi,
+                    unit: scope.periodNoun
+                )
+                .padding(.top, 2)
             }
             .panel()
         }
     }
 
-    /// "days" / "weeks" / "months" for a plain cadence; "periods" for a
-    /// compound one like every 2 weeks, where none of those is honest.
-    private func streakUnit(_ cadence: Cadence) -> String {
-        cadence.count == 1 ? cadence.unit.label(count: 2) : "periods"
-    }
+    // MARK: This period
 
-    // MARK: Where each tag stands (unscoped)
-
-    /// One row per tag on the ordinary day screen. Tags are inherently
-    /// periodic, so this is where "3 of 5 exercise this week" lives.
-    @ViewBuilder
-    private func tagsPanel(_ stats: CombinedStats) -> some View {
-        if !stats.tagProgress.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Tags")
-                    .font(.system(.headline, design: .rounded, weight: .semibold))
-
-                LazyVStack(spacing: 0) {
-                    ForEach(stats.tagProgress) { item in
-                        TagProgressRow(item: item)
-
-                        if item.id != stats.tagProgress.last?.id {
-                            Divider().overlay(Chrome.steel.opacity(0.25))
-                        }
-                    }
-                }
-            }
-            .panel()
-        }
-    }
-
-    // MARK: This period, for one tag (scoped)
-
-    /// The scoped equivalent of the today panel's counter, but for the unit
-    /// that actually matters to a tag: the current period.
-    private func tagPeriodPanel(_ tag: Tag) -> some View {
-        let progress = store.progress(for: tag)
-
-        return VStack(alignment: .leading, spacing: 14) {
+    /// The today panel's counter, but for the unit that actually matters to a
+    /// non-daily scope: the current period.
+    private func periodPanel(_ progress: ScopeProgress) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 Text(progress.periodLabel)
                     .font(.system(.headline, design: .rounded, weight: .semibold))
@@ -320,13 +287,43 @@ struct DayView: View {
         .panel()
     }
 
-    // MARK: Where each activity stands
+    // MARK: Where each tag stands
 
-    /// Carries the weight for non-daily activities. A day rail can't say
-    /// anything useful about a monthly commitment, so this does.
+    /// One row per tag, on the calendar spans only — they contain every tag.
+    /// Tags are inherently periodic, so this is where "3 of 5 exercise this
+    /// week" lives.
     @ViewBuilder
-    private func duePanel(_ stats: CombinedStats) -> some View {
-        let outstanding = stats.progress.filter { !$0.cadence.isDaily && !$0.isOpenEnded }
+    private func tagsPanel() -> some View {
+        let tags = store.tags.map { (tag: $0, progress: store.progress(for: $0)) }
+
+        if !tags.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tags")
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+
+                LazyVStack(spacing: 0) {
+                    ForEach(tags, id: \.tag.id) { item in
+                        ProgressRow(item.progress, symbol: item.tag.symbol)
+
+                        if item.tag.id != tags.last?.tag.id {
+                            Divider().overlay(Chrome.steel.opacity(0.25))
+                        }
+                    }
+                }
+            }
+            .panel()
+        }
+    }
+
+    // MARK: Where each member stands
+
+    /// Carries the weight for non-daily members. A day rail can't say anything
+    /// useful about a monthly commitment, so this does.
+    @ViewBuilder
+    private func duePanel(_ scope: Scope) -> some View {
+        let outstanding = store.visibleMembers(of: scope)
+            .filter { !$0.cadence.isDaily && !$0.isOpenEnded }
+            .map { store.progress(for: $0) }
 
         if !outstanding.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -335,7 +332,7 @@ struct DayView: View {
 
                 LazyVStack(spacing: 0) {
                     ForEach(outstanding) { item in
-                        ProgressRow(item: item)
+                        ProgressRow(item)
 
                         if item.id != outstanding.last?.id {
                             Divider().overlay(Chrome.steel.opacity(0.25))
@@ -349,26 +346,10 @@ struct DayView: View {
 
     // MARK: Numbers
 
-    private func statsPanel(_ stats: CombinedStats) -> some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 108), spacing: 12)],
-            alignment: .leading,
-            spacing: 14
-        ) {
-            StatTile(label: "Total", value: "\(stats.total)")
-            StatTile(label: "Streak", value: "\(stats.currentStreak)", unit: "days")
-            StatTile(label: "Longest", value: "\(stats.longestStreak)", unit: "days")
-            StatTile(label: "Days logged", value: "\(stats.daysLogged)")
-            StatTile(label: "Mastered", value: "\(stats.masteredDays)", unit: "days")
-            StatTile(label: "Per day", value: String(format: "%.1f", stats.average))
-        }
-        .panel()
-    }
-
-    /// Same grid, in the tag's own units.
-    private func tagStatsPanel(_ tag: Tag) -> some View {
-        let stats = store.stats(for: tag)
-        let unit = streakUnit(tag.cadence)
+    /// In the scope's own units: days for Today, weeks for this week or a
+    /// weekly tag.
+    private func statsPanel(_ scope: Scope, _ stats: PeriodStats) -> some View {
+        let unit = scope.periodNoun
         let singular = String(unit.dropLast())
 
         return LazyVGrid(
@@ -388,46 +369,13 @@ struct DayView: View {
 
     // MARK: History
 
-    private func history(_ stats: CombinedStats) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("By day")
-                .font(.system(.headline, design: .rounded, weight: .semibold))
-
-            if stats.days.isEmpty {
-                Text("Nothing logged yet. Press an orb.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 6)
-            } else {
-                LazyVStack(spacing: 0) {
-                    ForEach(stats.days) { day in
-                        Button {
-                            inspecting = day
-                        } label: {
-                            CombinedDayRow(day: day, calc: store.calc)
-                        }
-                        .buttonStyle(.plain)
-
-                        if day.id != stats.days.last?.id {
-                            Divider().overlay(Chrome.steel.opacity(0.25))
-                        }
-                    }
-                }
-            }
-        }
-        .panel()
-        // Dont render specular shiny on the heavy populated areas
-        .environment(\.orbShading, OrbShading.standard.quiet)
-    }
-
-    /// The tag's history is by period, not by day — a weekly tag has nothing
-    /// to say about Tuesday in particular.
-    private func tagHistory(_ tag: Tag) -> some View {
-        let stats = store.stats(for: tag)
+    /// One row per period with anything in it, plus the current one. Tap a
+    /// row for its jewels.
+    private func history(_ scope: Scope, _ stats: PeriodStats) -> some View {
         let periods = stats.periods.filter { $0.count > 0 || $0.index == stats.current?.index }
 
         return VStack(alignment: .leading, spacing: 12) {
-            Text("By \(String(streakUnit(tag.cadence).dropLast()))")
+            Text("By \(String(scope.periodNoun.dropLast()))")
                 .font(.system(.headline, design: .rounded, weight: .semibold))
 
             if stats.total == 0 {
@@ -438,14 +386,12 @@ struct DayView: View {
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(periods) { period in
-                        TagPeriodRow(
-                            period: period,
-                            label: store.calc.periodLabel(
-                                index: period.index,
-                                cadence: tag.cadence,
-                                anchor: tag.createdAt
-                            )
-                        )
+                        Button {
+                            inspecting = period
+                        } label: {
+                            PeriodRow(period: period, label: periodLabel(period, scope))
+                        }
+                        .buttonStyle(.plain)
 
                         if period.id != periods.last?.id {
                             Divider().overlay(Chrome.steel.opacity(0.25))
@@ -455,23 +401,64 @@ struct DayView: View {
             }
         }
         .panel()
+        // Dont render specular shiny on the heavy populated areas
         .environment(\.orbShading, OrbShading.standard.quiet)
     }
 }
 
-// MARK: - Tap target
+// MARK: - Rows
 
+/// Where one thing stands in its current period: an activity, or a tag. Same
+/// shape for both on purpose — the only visible difference should be that a
+/// tag's rail is mixed-colour and it wears its symbol.
 private struct ProgressRow: View {
-    let item: PeriodProgress
+    let name: String
+    let symbol: String?
+    let count: Int
+    let target: Int
+    let isMet: Bool
+    let remaining: Int
+    let periodLabel: String
+    let daysRemaining: Int
+    let fills: [RailJewel]
+
+    init(_ item: PeriodProgress) {
+        name = item.name
+        symbol = nil
+        count = item.count
+        target = item.target
+        isMet = item.isMet
+        remaining = item.remaining
+        periodLabel = item.periodLabel
+        daysRemaining = item.daysRemaining
+        fills = item.fills
+    }
+
+    init(_ item: ScopeProgress, symbol: String) {
+        name = item.name
+        self.symbol = symbol
+        count = item.count
+        target = item.target
+        isMet = item.isMet
+        remaining = item.remaining
+        periodLabel = item.periodLabel
+        daysRemaining = item.daysRemaining
+        fills = item.fills
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(item.name)
+                    if let symbol {
+                        Image(systemName: symbol)
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                    }
+                    Text(name)
                         .font(.system(.subheadline, design: .rounded, weight: .medium))
                         .lineLimit(1)
-                    if item.isMet {
+                    if isMet {
                         Image(systemName: "star.fill")
                             .font(.system(size: 9))
                             .foregroundStyle(Chrome.gold)
@@ -479,8 +466,8 @@ private struct ProgressRow: View {
                 }
 
                 SlotRail(
-                    fills: item.fills,
-                    capacity: item.target,
+                    fills: fills,
+                    capacity: target,
                     size: 13,
                     maxSlots: 20
                 )
@@ -492,80 +479,26 @@ private struct ProgressRow: View {
 
             Spacer(minLength: 8)
 
-            Text("\(item.count)/\(item.target)")
+            Text("\(count)/\(target)")
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(item.isMet ? Chrome.gold : .primary)
+                .foregroundStyle(isMet ? Chrome.gold : .primary)
         }
         .padding(.vertical, 10)
     }
 
     private var caption: String {
-        if item.isMet {
-            return "\(item.periodLabel) · done"
+        if isMet {
+            return "\(periodLabel) · done"
         }
-        let days = item.daysRemaining
-        let unit = days == 1 ? "day" : "days"
-        return "\(item.periodLabel) · \(item.remaining) to go, \(days) \(unit) left"
+        let unit = daysRemaining == 1 ? "day" : "days"
+        return "\(periodLabel) · \(remaining) to go, \(daysRemaining) \(unit) left"
     }
 }
 
-/// `ProgressRow` for a tag. Identical shape on purpose — the only visible
-/// difference should be that the rail is mixed-colour.
-private struct TagProgressRow: View {
-    let item: TagProgress
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: "tag.fill")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                    Text(item.name)
-                        .font(.system(.subheadline, design: .rounded, weight: .medium))
-                        .lineLimit(1)
-                    if item.isMet {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(Chrome.gold)
-                    }
-                }
-
-                SlotRail(
-                    fills: item.fills,
-                    capacity: item.target,
-                    size: 13,
-                    maxSlots: 20
-                )
-
-                Text(caption)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-
-            Text("\(item.count)/\(item.target)")
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(item.isMet ? Chrome.gold : .primary)
-        }
-        .padding(.vertical, 10)
-    }
-
-    private var caption: String {
-        if item.isMet {
-            return "\(item.periodLabel) · done"
-        }
-        let days = item.daysRemaining
-        let unit = days == 1 ? "day" : "days"
-        return "\(item.periodLabel) · \(item.remaining) to go, \(days) \(unit) left"
-    }
-}
-
-/// One past period of a tag: label, mixed rail, count.
-private struct TagPeriodRow: View {
+/// One past period of a scope — a day of Today, a week of a tag: label, mixed
+/// rail, count.
+private struct PeriodRow: View {
     let period: PeriodSummary
     let label: String
 
@@ -596,8 +529,13 @@ private struct TagPeriodRow: View {
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(period.isMet ? Chrome.gold : .primary)
+
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 10)
+        .contentShape(Rectangle())
     }
 }
 
@@ -651,48 +589,5 @@ private struct ActivityButton: View {
         )
         .accessibilityLabel("Slot a jewel for \(activity.name)")
         .accessibilityHint("Long press to log with a note")
-    }
-}
-
-// MARK: - Day row
-
-private struct CombinedDayRow: View {
-    let day: CombinedDay
-    let calc: DayCalculator
-
-    var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(calc.label(for: day.day))
-                        .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    if day.isMastered {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(Chrome.gold)
-                    }
-                }
-
-                SlotRail(
-                    fills: day.fills,
-                    capacity: day.capacity,
-                    size: 14,
-                    maxSlots: 24
-                )
-            }
-
-            Spacer(minLength: 8)
-
-            Text("\(day.count)")
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(day.isMastered ? Chrome.gold : .primary)
-
-            Image(systemName: "chevron.right")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
     }
 }

@@ -613,6 +613,10 @@ struct DayCalculator {
         if cadence.isDaily { return label(for: start) }
 
         if cadence.unit == .month {
+            // A calendar year — "This year" — reads as the year alone.
+            if cadence.count == 12 && calendar.component(.month, from: start) == 1 {
+                return start.formatted(.dateTime.year())
+            }
             if cadence.count == 1 {
                 return start.formatted(.dateTime.month(.wide).year())
             }
