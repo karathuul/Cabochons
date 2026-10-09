@@ -9,9 +9,9 @@ struct LogJewelIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Jewel"
 
     static var description = IntentDescription(
-        "Adds one or more Memoira into an activity and returns its new count for today.",
+        "Adds one or more jewels into an activity and returns its new count for today.",
         categoryName: "Logging",
-        searchKeywords: ["memoria", "jewel", "habit", "track", "tally", "count"]
+        searchKeywords: ["cabochons", "jewel", "habit", "track", "tally", "count"]
     )
 
     /// False on purpose: an automation that yanks you into the app every time

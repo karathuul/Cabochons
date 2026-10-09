@@ -6,7 +6,7 @@ internal import Foundation
 /// Kept to numbers only. A Shortcuts action that sometimes returns a date and
 /// sometimes an integer forces every downstream block to defend itself, so
 /// dates and text get their own actions if they're ever needed.
-enum MateriaStat: String, AppEnum {
+enum CabochonsStat: String, AppEnum {
     case today
     case period
     case streak
@@ -15,7 +15,7 @@ enum MateriaStat: String, AppEnum {
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Statistic"
 
-    static var caseDisplayRepresentations: [MateriaStat: DisplayRepresentation] = [
+    static var caseDisplayRepresentations: [CabochonsStat: DisplayRepresentation] = [
         .today:  DisplayRepresentation(title: "Jewels today",
                                        subtitle: "Counted against your day-start hour"),
         .period: DisplayRepresentation(title: "Jewels this period",
@@ -25,7 +25,7 @@ enum MateriaStat: String, AppEnum {
         .total:  DisplayRepresentation(title: "Total jewels",
                                        subtitle: "All time"),
         .target: DisplayRepresentation(title: "Target",
-                                       subtitle: "Memoria goal per period")
+                                       subtitle: "Cabochons goal per period")
     ]
 }
 
@@ -49,7 +49,7 @@ struct ActivityStatIntent: AppIntent {
     }
 
     @Parameter(title: "Statistic", default: .today)
-    var stat: MateriaStat
+    var stat: CabochonsStat
 
     @Parameter(title: "Activity", requestValueDialog: "Which activity?")
     var activity: ActivityEntity

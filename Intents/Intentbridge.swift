@@ -5,14 +5,14 @@ internal import Foundation
 /// Shortcuts shows the localized string to the user and stops the shortcut.
 /// A real error type (rather than a sentinel like `-1`) means an "if" block
 /// downstream can't silently treat a failure as data.
-enum MateriaIntentError: Swift.Error, CustomLocalizedStringResourceConvertible {
+enum CabochonsIntentError: Swift.Error, CustomLocalizedStringResourceConvertible {
     case activityNotFound
     case nothingToUndo(activityName: String)
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
         case .activityNotFound:
-            return "That activity no longer exists in MateriaLog."
+            return "That activity no longer exists in Cabochons."
         case .nothingToUndo(let name):
             return "\(name) has no jewels to remove."
         }
@@ -51,7 +51,7 @@ enum IntentBridge {
         in store: LogStore
     ) throws -> (name: String, todayCount: Int, logged: Int) {
         guard let activity = store.activity(activityID) else {
-            throw MateriaIntentError.activityNotFound
+            throw CabochonsIntentError.activityNotFound
         }
 
         var logged = 0
@@ -59,7 +59,7 @@ enum IntentBridge {
             let stamp = date.addingTimeInterval(Double(offset))
             if store.slot(activityID, at: stamp, note: note) { logged += 1 }
         }
-        guard logged > 0 else { throw MateriaIntentError.activityNotFound }
+        guard logged > 0 else { throw CabochonsIntentError.activityNotFound }
 
         return (activity.name, try stat(.today, for: activityID, in: store), logged)
     }
@@ -75,10 +75,10 @@ enum IntentBridge {
         in store: LogStore
     ) throws -> (name: String, todayCount: Int) {
         guard let activity = store.activity(activityID) else {
-            throw MateriaIntentError.activityNotFound
+            throw CabochonsIntentError.activityNotFound
         }
         guard let newest = activity.jewels.max(by: { $0.timestamp < $1.timestamp }) else {
-            throw MateriaIntentError.nothingToUndo(activityName: activity.name)
+            throw CabochonsIntentError.nothingToUndo(activityName: activity.name)
         }
 
         store.remove(jewel: newest.id, from: activityID)
@@ -90,9 +90,9 @@ enum IntentBridge {
     /// Every number comes from a `LogStore` method the app itself uses, so the
     /// Shortcuts action and the screen can never disagree.
     @MainActor
-    static func stat(_ kind: MateriaStat, for activityID: UUID, in store: LogStore) throws -> Int {
+    static func stat(_ kind: CabochonsStat, for activityID: UUID, in store: LogStore) throws -> Int {
         guard let activity = store.activity(activityID) else {
-            throw MateriaIntentError.activityNotFound
+            throw CabochonsIntentError.activityNotFound
         }
 
         switch kind {
