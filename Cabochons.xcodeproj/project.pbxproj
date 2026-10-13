@@ -233,16 +233,13 @@
 				74EDB086307E77A000C8D080 /* Graphics */,
 				74EDB085307E778A00C8D080 /* UserGuide */,
 				74D2551E306A30A600DFFAF3 /* Swipeback.swift */,
-				74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */,
 				74D254FE305F0D0400DFFAF3 /* MilestoneCenter.swift */,
 				74D254FC305F03D900DFFAF3 /* Haptics.swift */,
 				74D254FA305F02FD00DFFAF3 /* Milestones.swift */,
 				74D254F5305BA47A00DFFAF3 /* Cabochons.entitlements */,
 				74D254DF305BA45800DFFAF3 /* Info.plist */,
-				74CF364F30584DEE00694277 /* Datasheet.swift */,
 				74CF364C30584BDF00694277 /* DataLoads */,
 				74C98338305287B400929C84 /* ActivityHistory.swift */,
-				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
 				74E5ADEB3043FAF4007B24DB /* Logstore.swift */,
 				74E5ADED3043FAF4007B24DB /* CabochonsApp.swift */,
@@ -285,6 +282,9 @@
 			children = (
 				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
 				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
+				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
+				74CF364F30584DEE00694277 /* Datasheet.swift */,
+				74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
