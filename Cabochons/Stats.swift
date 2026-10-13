@@ -657,3 +657,114 @@ enum Stats {
         currentStreak > 0 && current?.keepsStreak != true
     }
 }
+
+// MARK: - Sidebar order
+
+/// How the sidebar lists activities. `custom` is the order they're stored in;
+/// the rest are computed on every draw and never written back.
+enum ActivityOrder: String, CaseIterable, Identifiable {
+    case custom
+    case period
+    case recentlyUpdated
+    case leastRecentlyUpdated
+    case longestToComplete
+    case shortestToComplete
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .custom:               "Custom"
+        case .period:               "Period"
+        case .recentlyUpdated:      "Last updated"
+        case .leastRecentlyUpdated: "Least recently updated"
+        case .longestToComplete:    "Longest to complete"
+        case .shortestToComplete:   "Shortest to complete"
+        }
+    }
+
+    func sorted(_ activities: [Activity], calc: DayCalculator) -> [Activity] {
+        if self == .custom { return activities }
+
+        // Open-ended activities ask for no period, so nothing about them can be
+        // measured against the others. They go last, by name, whatever the order.
+        let bounded = activities.filter { !$0.isOpenEnded }
+        let openEnded = activities
+            .filter(\.isOpenEnded)
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        let ranked: [Activity]
+        switch self {
+        case .custom:
+            ranked = bounded
+        case .period:
+            ranked = Self.sort(bounded, key: { Self.days(in: $0.cadence) }, ascending: true)
+        case .recentlyUpdated:
+            ranked = Self.sort(bounded, key: { Self.lastUpdated($0) }, ascending: false)
+        case .leastRecentlyUpdated:
+            ranked = Self.sort(bounded, key: { Self.lastUpdated($0) }, ascending: true)
+        case .longestToComplete:
+            ranked = Self.sort(bounded, key: { Self.timeToComplete($0, calc: calc) }, ascending: false)
+        case .shortestToComplete:
+            ranked = Self.sort(bounded, key: { Self.timeToComplete($0, calc: calc) }, ascending: true)
+        }
+        return ranked + openEnded
+    }
+
+    // MARK: Keys
+
+    /// Rough length of a cadence, so "every 2 weeks" falls between weekly and
+    /// monthly. Months are counted as 30 days: only their order matters here.
+    private static func days(in cadence: Cadence) -> Int {
+        switch cadence.unit {
+        case .day:   cadence.count
+        case .week:  cadence.count * 7
+        case .month: cadence.count * 30
+        }
+    }
+
+    /// The newest jewel, or when the activity was made if it has none yet.
+    private static func lastUpdated(_ activity: Activity) -> Date {
+        activity.jewels.map(\.timestamp).max() ?? activity.createdAt
+    }
+
+    /// How long, on average, a met period took from its opening to the jewel
+    /// that met its target. Nil when there's no target or no met period yet.
+    private static func timeToComplete(_ activity: Activity, calc: DayCalculator) -> TimeInterval? {
+        guard activity.target > 0 else { return nil }
+
+        let byPeriod = Dictionary(grouping: activity.jewels) {
+            calc.periodIndex(for: $0.timestamp, cadence: activity.cadence, anchor: activity.createdAt)
+        }
+
+        let durations: [TimeInterval] = byPeriod.compactMap { index, jewels in
+            guard jewels.count >= activity.target else { return nil }
+            let opening = calc.periodStart(index: index, cadence: activity.cadence, anchor: activity.createdAt)
+            let met = jewels.map(\.timestamp).sorted()[activity.target - 1]
+            return met.timeIntervalSince(opening)
+        }
+        guard !durations.isEmpty else { return nil }
+        return durations.reduce(0, +) / Double(durations.count)
+    }
+
+    /// Nil keys sort last in either direction, so an activity with nothing to
+    /// measure doesn't float to the top of "shortest".
+    private static func sort<Key: Comparable>(
+        _ activities: [Activity],
+        key: (Activity) -> Key?,
+        ascending: Bool
+    ) -> [Activity] {
+        activities.sorted { lhs, rhs in
+            switch (key(lhs), key(rhs)) {
+            case let (l?, r?) where l != r:
+                return ascending ? l < r : l > r
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+        }
+    }
+}

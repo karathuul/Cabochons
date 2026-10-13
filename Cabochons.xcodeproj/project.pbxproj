@@ -229,10 +229,10 @@
 		74E5ADF33043FAF4007B24DB /* Cabochons */ = {
 			isa = PBXGroup;
 			children = (
+				74EDB088307E77FB00C8D080 /* Views */,
+				74EDB086307E77A000C8D080 /* Graphics */,
+				74EDB085307E778A00C8D080 /* UserGuide */,
 				74D2551E306A30A600DFFAF3 /* Swipeback.swift */,
-				74D25507306241A400DFFAF3 /* Wordmark.swift */,
-				74D25505306068F900DFFAF3 /* GuideView.swift */,
-				74D25503306068CB00DFFAF3 /* Guide.swift */,
 				74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */,
 				74D254FE305F0D0400DFFAF3 /* MilestoneCenter.swift */,
 				74D254FC305F03D900DFFAF3 /* Haptics.swift */,
@@ -242,11 +242,8 @@
 				74CF364F30584DEE00694277 /* Datasheet.swift */,
 				74CF364C30584BDF00694277 /* DataLoads */,
 				74C98338305287B400929C84 /* ActivityHistory.swift */,
-				74C9833330512DB600929C84 /* OrbGraphics */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74E5ADE73043FAF4007B24DB /* Assets.xcassets */,
-				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
-				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
 				74E5ADEB3043FAF4007B24DB /* Logstore.swift */,
 				74E5ADED3043FAF4007B24DB /* CabochonsApp.swift */,
 				74E5ADEF3043FAF4007B24DB /* Models.swift */,
@@ -255,6 +252,41 @@
 				74E5ADF23043FAF4007B24DB /* Stats.swift */,
 			);
 			path = Cabochons;
+			sourceTree = "<group>";
+		};
+		74EDB085307E778A00C8D080 /* UserGuide */ = {
+			isa = PBXGroup;
+			children = (
+				74D25505306068F900DFFAF3 /* GuideView.swift */,
+				74D25503306068CB00DFFAF3 /* Guide.swift */,
+			);
+			path = UserGuide;
+			sourceTree = "<group>";
+		};
+		74EDB086307E77A000C8D080 /* Graphics */ = {
+			isa = PBXGroup;
+			children = (
+				74EDB087307E77B100C8D080 /* TextGraphics */,
+				74C9833330512DB600929C84 /* OrbGraphics */,
+			);
+			path = Graphics;
+			sourceTree = "<group>";
+		};
+		74EDB087307E77B100C8D080 /* TextGraphics */ = {
+			isa = PBXGroup;
+			children = (
+				74D25507306241A400DFFAF3 /* Wordmark.swift */,
+			);
+			path = TextGraphics;
+			sourceTree = "<group>";
+		};
+		74EDB088307E77FB00C8D080 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
+				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

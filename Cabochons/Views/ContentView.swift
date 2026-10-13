@@ -31,6 +31,9 @@ struct ContentView: View {
     /// Persisted so the sidebar doesn't re-expand every launch — the whole
     /// point of hiding is to get things out of the way.
     @AppStorage("hiddenSectionExpanded") private var hiddenExpanded = false
+    /// Remembered like the section above. `custom` is the order the rails were
+    /// made in, so it's the default for anyone who never opens the menu.
+    @AppStorage("activityOrder") private var activityOrder = ActivityOrder.custom
 
     var body: some View {
         NavigationSplitView {
@@ -83,6 +86,8 @@ struct ContentView: View {
 
     private var sidebar: some View {
         @Bindable var store = store
+        let visible = activityOrder.sorted(store.visibleActivities, calc: store.calc)
+        let hidden = activityOrder.sorted(store.hiddenActivities, calc: store.calc)
 
         return List(selection: $selection) {
             Section {
@@ -153,7 +158,7 @@ struct ContentView: View {
                 }
             }
 
-            Section("Activities") {
+            Section {
                 if store.activities.isEmpty {
                     EmptySidebar { creatingNew = true }
                         .listRowBackground(Color.clear)
@@ -162,7 +167,7 @@ struct ContentView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(store.visibleActivities) { activity in
+                    ForEach(visible) { activity in
                         SidebarRow(activity: activity)
                             .tag(Route.activity(activity.id))
                             .contextMenu {
@@ -175,6 +180,19 @@ struct ContentView: View {
                                 }
                             }
                     }
+                    // Only the custom order has a meaning to drag into; the
+                    // computed orders would just snap back.
+                    .onMove(perform: activityOrder == .custom
+                        ? { store.moveVisible(from: $0, to: $1) }
+                        : nil)
+                }
+            } header: {
+                HStack {
+                    Text("Activities")
+                    Spacer(minLength: 0)
+                    if !store.activities.isEmpty {
+                        sortMenu
+                    }
                 }
             }
 
@@ -182,7 +200,7 @@ struct ContentView: View {
             if !store.hiddenActivities.isEmpty {
                 Section {
                     if hiddenExpanded {
-                        ForEach(store.hiddenActivities) { activity in
+                        ForEach(hidden) { activity in
                             SidebarRow(activity: activity)
                                 .tag(Route.activity(activity.id))
                                 .contextMenu {
@@ -254,6 +272,23 @@ struct ContentView: View {
         } label: {
             Label("New", systemImage: "plus")
         }
+    }
+
+    /// In the Activities header, beside the Tags "+". Picking an order keeps
+    /// the check on it, so the current sort is visible without opening anything.
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort activities", selection: $activityOrder) {
+                ForEach(ActivityOrder.allCases) { order in
+                    Text(order.label).tag(order)
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(activityOrder == .custom ? Color.secondary : Chrome.steelHi)
+        }
+        .accessibilityLabel("Sort activities")
     }
 
     private var settingsMenu: some View {

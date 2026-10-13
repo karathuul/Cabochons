@@ -259,6 +259,20 @@ final class LogStore : Observable {
         save()
     }
 
+    /// Reorders the visible rails among themselves. Hidden activities keep
+    /// their slots in the stored list, so unhiding one puts it back where it was.
+    func moveVisible(from source: IndexSet, to destination: Int) {
+        var reordered = visibleActivities
+        reordered.move(fromOffsets: source, toOffset: destination)
+
+        var next = reordered.makeIterator()
+        for index in activities.indices where !activities[index].isHidden {
+            guard let activity = next.next() else { break }
+            activities[index] = activity
+        }
+        save()
+    }
+
     /// The whole point of the app. Notes arriving here (Siri, Shortcuts) get
     /// the same trim-and-clamp as ones typed in the editor.
     @discardableResult
