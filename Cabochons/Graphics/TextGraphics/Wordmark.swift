@@ -7,7 +7,8 @@
 //
 // Wordmark          the view: text in the house style, or the brand asset
 // SplitFill         the TextRenderer behind the text
-// .wordmark         the CabochonsColor the titles are cut from
+// .wordmark         the house CabochonsColor the titles are cut from, unless
+//                   one is picked in Settings (WordmarkColorSheet)
 // .capCenter        alignment through the middle of the capitals
 // .wordmarkTitle    drop-in replacement for .navigationTitle. On iPhone the
 //                   header replaces the navigation bar: back button (on
@@ -35,6 +36,19 @@ extension CabochonsColor {
     /// wordmark was first hand-tuned with, and its `rim` lands near the old
     /// #C2EFFF.
     static let wordmark = CabochonsColor(hue: 0.544, saturation: 0.62, brightness: 1)
+
+    /// UserDefaults key for the colour picked in Settings. Absent means the
+    /// house blue.
+    static let wordmarkKey = "wordmarkColor"
+
+    /// The picked colour, or the house blue if there isn't one.
+    static var storedWordmark: CabochonsColor {
+        decoded(UserDefaults.standard.data(forKey: wordmarkKey)) ?? .wordmark
+    }
+
+    static func decoded(_ data: Data?) -> CabochonsColor? {
+        data.flatMap { try? JSONDecoder().decode(CabochonsColor.self, from: $0) }
+    }
 }
 
 // MARK: - Alignment
@@ -65,14 +79,17 @@ struct Wordmark: View {
     /// built into the OS or bundled with the app.
     var fontName: String? = "Didot-Bold"
     /// The orb the text is cut from: `rim` above the seam, `core` into `deep`
-    /// below it.
-    var color: CabochonsColor = .wordmark
+    /// below it. Nil follows the colour picked in Settings.
+    var color: CabochonsColor? = nil
     /// How far from `core` toward `deep` the baseline gets. All the way is
     /// true to the orb, but `deep` is 1.7:1 against Chrome.panel and the
     /// letters' feet vanish. Halfway keeps the house blue around 4:1.
     var depth: Double = 0.5
 
+    @AppStorage(CabochonsColor.wordmarkKey) private var stored: Data?
+
     var body: some View {
+        let color = color ?? CabochonsColor.decoded(stored) ?? .wordmark
         if let asset, Self.exists(asset) {
             Image(asset)
                 .resizable()

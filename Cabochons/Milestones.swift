@@ -84,7 +84,6 @@ struct MilestoneScanner {
     static let standard = MilestoneScanner(detectors: [
         PeriodTargetDetector(),
         TagTargetDetector(),
-        DayMasteryDetector(),
         TotalCountDetector(),
         ReturnDetector()
     ])
@@ -149,27 +148,12 @@ struct TagTargetDetector: MilestoneDetector {
                 .filter(\.isMet)
                 .map {
                     Milestone(
-                        key: "tag:\($0.tagID?.uuidString ?? ""):period",
+                        key: "tag:\($0.tagID):period",
                         weight: .init($0.cadence),
                         headline: "\($0.name) — target met"
                     )
                 }
         )
-    }
-}
-
-/// Today's sockets, all of them — Today's own target, met. Keyed by the day
-/// so it can re-fire tomorrow.
-struct DayMasteryDetector: MilestoneDetector {
-    func met(_ context: MilestoneContext) -> Set<Milestone> {
-        let calc = context.store.calc
-        guard context.store.progress(for: context.store.todayScope).isMet else { return [] }
-
-        return [Milestone(
-            key: "day:\(calc.today.timeIntervalSince1970):completed",
-            weight: .small,
-            headline: "Day completed"
-        )]
     }
 }
 

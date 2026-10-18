@@ -60,7 +60,7 @@ struct HistoryProvider: AppIntentTimelineProvider {
         let file = SharedStorage.load()
         let entry = HistoryEntry.build(for: resolve(configuration, in: file), file: file)
 
-        // Same policy as the Today widget: the only thing that changes without
+        // The only thing that changes without
         // an app write is the day rolling over, which adds a new empty socket.
         let calc = DayCalculator(dayStartHour: file.dayStartHour)
         let nextDay = calc.offsetting(calc.today, by: 1)

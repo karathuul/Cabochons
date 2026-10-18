@@ -48,48 +48,6 @@ final class LogStore : Observable {
         Stats.compute(for: activity, calc: calc)
     }
 
-    // MARK: Scopes
-
-    /// A tag's scope. A tag ID that no longer exists falls back to Today.
-    func scope(_ tagID: Tag.ID?) -> Scope {
-        tag(tagID).map(Scope.init) ?? todayScope
-    }
-
-    /// Every activity, over one calendar span.
-    func scope(_ span: Scope.Span) -> Scope {
-        Scope(span, activities: activities, calc: calc)
-    }
-
-    var todayScope: Scope {
-        scope(.day)
-    }
-
-    func stats(for scope: Scope) -> PeriodStats {
-        Stats.compute(for: scope, activities: activities, calc: calc)
-    }
-
-    func progress(for scope: Scope) -> ScopeProgress {
-        Stats.progress(for: scope, activities: activities, calc: calc)
-    }
-
-    func progress(for tag: Tag) -> ScopeProgress {
-        progress(for: Scope(tag))
-    }
-
-    func stats(for tag: Tag) -> PeriodStats {
-        stats(for: Scope(tag))
-    }
-
-    /// Members that still have a button: visible ones, in sidebar order.
-    func visibleMembers(of scope: Scope) -> [Activity] {
-        scope.visibleMembers(of: activities)
-    }
-
-    /// Sockets today's rail has for this scope.
-    func dailyCapacity(for scope: Scope) -> Int {
-        scope.dailyCapacity(of: activities, calc: calc)
-    }
-
     // MARK: Tags
 
     func tag(_ id: Tag.ID?) -> Tag? {
@@ -100,6 +58,24 @@ final class LogStore : Observable {
     /// Every tag this activity belongs to, in tag order.
     func tags(containing id: Activity.ID) -> [Tag] {
         tags.filter { $0.contains(id) }
+    }
+
+    func stats(for tag: Tag) -> PeriodStats {
+        Stats.compute(for: tag, activities: activities, calc: calc)
+    }
+
+    func progress(for tag: Tag) -> TagProgress {
+        Stats.progress(for: tag, activities: activities, calc: calc)
+    }
+
+    /// Members that still have a button: visible ones, in sidebar order.
+    func visibleMembers(of tag: Tag) -> [Activity] {
+        tag.visibleMembers(of: activities)
+    }
+
+    /// Sockets today's rail has for this tag.
+    func dailyCapacity(for tag: Tag) -> Int {
+        tag.dailyCapacity(of: activities)
     }
 
     func todayCount(for activity: Activity) -> Int {
@@ -147,16 +123,16 @@ final class LogStore : Observable {
             .sorted { $0.timestamp > $1.timestamp }
     }
 
-    /// Newest first, from a scope's members only.
-    func entries(on day: Date, in scope: Scope) -> [LoggedJewel] {
-        entries(on: day).filter { scope.contains($0.activityID) }
+    /// Newest first, from a tag's members only.
+    func entries(on day: Date, in tag: Tag) -> [LoggedJewel] {
+        entries(on: day).filter { tag.contains($0.activityID) }
     }
 
-    /// Newest first, from a scope's members within one of its periods.
-    func entries(in period: PeriodSummary, scope: Scope) -> [LoggedJewel] {
+    /// Newest first, from a tag's members within one of its periods.
+    func entries(in period: PeriodSummary, tag: Tag) -> [LoggedJewel] {
         allEntries()
             .filter {
-                scope.contains($0.activityID)
+                tag.contains($0.activityID)
                     && $0.timestamp >= period.start
                     && $0.timestamp < period.end
             }
@@ -296,14 +272,10 @@ final class LogStore : Observable {
         save()
     }
 
-    /// The jewel a "add a note" action should attach to.
-    var mostRecentToday: LoggedJewel? {
-        entries(on: calc.today).first
-    }
-
-    /// Same, narrowed to a scope's members.
-    func mostRecentToday(in scope: Scope) -> LoggedJewel? {
-        entries(on: calc.today, in: scope).first
+    /// The jewel a tag's "add a note" action should attach to: today's
+    /// newest from its members.
+    func mostRecentToday(in tag: Tag) -> LoggedJewel? {
+        entries(on: calc.today, in: tag).first
     }
 
     func remove(jewel: Jewel.ID, from id: Activity.ID) {
@@ -320,20 +292,11 @@ final class LogStore : Observable {
         return true
     }
 
-    /// Removes today's most recent jewel whichever activity it came from —
-    /// undo on the day rail should pop the last socket you actually filled.
-    @discardableResult
-    func removeLastToday() -> Bool {
-        guard let newest = entries(on: calc.today).first else { return false }
-        remove(jewel: newest.id, from: newest.activityID)
-        return true
-    }
-
     /// Undo on a tag-scoped rail should pop the last jewel *on that rail*, not
     /// whatever was logged most recently anywhere.
     @discardableResult
-    func removeLastToday(in scope: Scope) -> Bool {
-        guard let newest = entries(on: calc.today, in: scope).first else { return false }
+    func removeLastToday(in tag: Tag) -> Bool {
+        guard let newest = entries(on: calc.today, in: tag).first else { return false }
         remove(jewel: newest.id, from: newest.activityID)
         return true
     }

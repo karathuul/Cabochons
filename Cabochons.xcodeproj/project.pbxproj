@@ -26,14 +26,12 @@
 		74E5ADA23043E4E5007B24DB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 74E5AD6030409D4D007B24DB /* SwiftUI.framework */; };
 		74E5ADB13043E4E7007B24DB /* CabochonsWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		74E5ADDF3043F74F007B24DB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 74E5ADD73043F74F007B24DB /* Assets.xcassets */; };
-		74E5ADE13043F74F007B24DB /* CabochonsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADD93043F74F007B24DB /* CabochonsProvider.swift */; };
 		74E5ADE23043F74F007B24DB /* CabochonsWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDA3043F74F007B24DB /* CabochonsWidgetBundle.swift */; };
 		74E5ADE33043F74F007B24DB /* CabochonsWidgetControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDB3043F74F007B24DB /* CabochonsWidgetControl.swift */; };
 		74E5ADE43043F74F007B24DB /* CabochonsWidgetLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDC3043F74F007B24DB /* CabochonsWidgetLiveActivity.swift */; };
-		74E5ADE53043F74F007B24DB /* CabochonsWidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADDD3043F74F007B24DB /* CabochonsWidgetViews.swift */; };
 		74E5ADF43043FAF4007B24DB /* Activitydetailview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */; };
 		74E5ADF63043FAF4007B24DB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADE93043FAF4007B24DB /* ContentView.swift */; };
-		74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEA3043FAF4007B24DB /* Dayview.swift */; };
+		74E5ADF73043FAF4007B24DB /* TagView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEA3043FAF4007B24DB /* TagView.swift */; };
 		74E5ADF83043FAF4007B24DB /* Logstore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEB3043FAF4007B24DB /* Logstore.swift */; };
 		74E5ADF93043FAF4007B24DB /* CabochonsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADED3043FAF4007B24DB /* CabochonsApp.swift */; };
 		74E5ADFA3043FAF4007B24DB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E5ADEF3043FAF4007B24DB /* Models.swift */; };
@@ -93,15 +91,13 @@
 		74E5AD6030409D4D007B24DB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		74E5ADA03043E4E5007B24DB /* CabochonsWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CabochonsWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74E5ADD73043F74F007B24DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		74E5ADD93043F74F007B24DB /* CabochonsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CabochonsProvider.swift; sourceTree = "<group>"; };
 		74E5ADDA3043F74F007B24DB /* CabochonsWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CabochonsWidgetBundle.swift; sourceTree = "<group>"; };
 		74E5ADDB3043F74F007B24DB /* CabochonsWidgetControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CabochonsWidgetControl.swift; sourceTree = "<group>"; };
 		74E5ADDC3043F74F007B24DB /* CabochonsWidgetLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CabochonsWidgetLiveActivity.swift; sourceTree = "<group>"; };
-		74E5ADDD3043F74F007B24DB /* CabochonsWidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CabochonsWidgetViews.swift; sourceTree = "<group>"; };
 		74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activitydetailview.swift; sourceTree = "<group>"; };
 		74E5ADE73043FAF4007B24DB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		74E5ADE93043FAF4007B24DB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		74E5ADEA3043FAF4007B24DB /* Dayview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dayview.swift; sourceTree = "<group>"; };
+		74E5ADEA3043FAF4007B24DB /* TagView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagView.swift; sourceTree = "<group>"; };
 		74E5ADEB3043FAF4007B24DB /* Logstore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logstore.swift; sourceTree = "<group>"; };
 		74E5ADED3043FAF4007B24DB /* CabochonsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CabochonsApp.swift; sourceTree = "<group>"; };
 		74E5ADEF3043FAF4007B24DB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -217,11 +213,9 @@
 				74C9833D3052882500929C84 /* HistoryWidget.swift */,
 				74C9833B3052880400929C84 /* HistoryWidgetIntent.swift */,
 				74E5ADD73043F74F007B24DB /* Assets.xcassets */,
-				74E5ADD93043F74F007B24DB /* CabochonsProvider.swift */,
 				74E5ADDA3043F74F007B24DB /* CabochonsWidgetBundle.swift */,
 				74E5ADDB3043F74F007B24DB /* CabochonsWidgetControl.swift */,
 				74E5ADDC3043F74F007B24DB /* CabochonsWidgetLiveActivity.swift */,
-				74E5ADDD3043F74F007B24DB /* CabochonsWidgetViews.swift */,
 			);
 			path = CabochonsWidget;
 			sourceTree = "<group>";
@@ -281,7 +275,7 @@
 			isa = PBXGroup;
 			children = (
 				74E5ADE93043FAF4007B24DB /* ContentView.swift */,
-				74E5ADEA3043FAF4007B24DB /* Dayview.swift */,
+				74E5ADEA3043FAF4007B24DB /* TagView.swift */,
 				74E5ADE63043FAF4007B24DB /* Activitydetailview.swift */,
 				74CF364F30584DEE00694277 /* Datasheet.swift */,
 				74D2550130605EBA00DFFAF3 /* HistoryYearPanel.swift */,
@@ -405,7 +399,7 @@
 				74D2550230605EBE00DFFAF3 /* HistoryYearPanel.swift in Sources */,
 				74D25506306068FD00DFFAF3 /* GuideView.swift in Sources */,
 				74D254FD305F03DB00DFFAF3 /* Haptics.swift in Sources */,
-				74E5ADF73043FAF4007B24DB /* Dayview.swift in Sources */,
+				74E5ADF73043FAF4007B24DB /* TagView.swift in Sources */,
 				74E5ADF83043FAF4007B24DB /* Logstore.swift in Sources */,
 				74D2551F306A30AC00DFFAF3 /* Swipeback.swift in Sources */,
 				74CF364D30584BDF00694277 /* Dataexport.swift in Sources */,
@@ -425,7 +419,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				74E5ADE13043F74F007B24DB /* CabochonsProvider.swift in Sources */,
 				74C9833E3052882900929C84 /* HistoryWidget.swift in Sources */,
 				74E5AE02304401E8007B24DB /* Sharedstorage.swift in Sources */,
 				74C9833A305287DF00929C84 /* ActivityHistory.swift in Sources */,
@@ -435,7 +428,6 @@
 				74E5ADFF304401C0007B24DB /* Models.swift in Sources */,
 				74E5ADE43043F74F007B24DB /* CabochonsWidgetLiveActivity.swift in Sources */,
 				74C9833C3052880A00929C84 /* HistoryWidgetIntent.swift in Sources */,
-				74E5ADE53043F74F007B24DB /* CabochonsWidgetViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

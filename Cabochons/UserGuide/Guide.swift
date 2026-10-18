@@ -118,7 +118,7 @@ enum GuideContent {
                 .dayRail,
                 title: "The Day Rail",
                 symbol: "rectangle.split.3x1.fill",
-                blurb: "Everything logged today, in the order it happened.",
+                blurb: "Everything a tag's members logged today, in the order it happened.",
                 detail: "Colours mix freely. The rail doesn't sort by activity — it sorts by when."
             )
 
@@ -190,7 +190,7 @@ enum GuideContent {
                 .tags,
                 title: "Tags",
                 symbol: "tag.fill",
-                blurb: "Group activities, then give the group its own target.",
+                blurb: "Group activities, then give the group its own target. A tag is where you slot jewels.",
                 detail: "An activity can wear as many tags as it likes. Tag targets stack on top of each activity's own — \"exercise five times a week\" doesn't care which exercise."
             )
 
@@ -217,7 +217,7 @@ enum GuideContent {
                 .widgets,
                 title: "Widgets",
                 symbol: "square.grid.2x2.fill",
-                blurb: "Put today on the Home Screen, small or medium.",
+                blurb: "Put a year of one activity on the Home Screen, small or medium.",
                 detail: "Long-press the Home Screen, tap the plus, and look for the app by name."
             )
 

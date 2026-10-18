@@ -1,33 +1,29 @@
 // MARK: - ContentView
-// The app's root split view. The sidebar lists the calendar spans (Today,
-// this week, this month, this year), tags (each wearing its chosen symbol over
-// a small period rail) and activities; the detail pane shows a span, one
-// activity, or the day narrowed to a tag. The New and
+// The app's root split view. The sidebar lists tags (each wearing its chosen
+// symbol over a small period rail) and activities; the detail pane shows one
+// tag or one activity, opening on the first tag. The New and
 // Settings menus sit in the wordmark's header row (the toolbar on the Mac).
 
 internal import SwiftUI
 
-/// Sidebar destinations. The day is now a first-class place, not something you
-/// reach through an activity.
+/// Sidebar destinations.
 enum Route: Hashable {
-    /// The day view over every activity, for one calendar span.
-    case span(Scope.Span)
     case activity(Activity.ID)
-    /// The day view, narrowed to one tag's members.
+    /// A tag's screen: its members' day rail, loadout and periods.
     case tag(Tag.ID)
-
-    static let today = Route.span(.day)
 }
 
 struct ContentView: View {
     @Environment(LogStore.self) private var store
-    @State private var selection: Route? = .today
+    /// Starts on the first tag; see `fallback`.
+    @State private var selection: Route?
     @State private var editing: Activity?
     @State private var creatingNew = false
     @State private var editingTag: Tag?
     @State private var showingGuide = false
     @State private var creatingTag = false
     @State private var showingData = false
+    @State private var showingWordmark = false
     /// Persisted so the sidebar doesn't re-expand every launch — the whole
     /// point of hiding is to get things out of the way.
     @AppStorage("hiddenSectionExpanded") private var hiddenExpanded = false
@@ -40,23 +36,18 @@ struct ContentView: View {
             sidebar
         } detail: {
             switch selection {
-            case .none:
-                DayView()
-            case .span(let span):
-                DayView(span: span).id(span)
-            case .activity(let id):
-                if store.activity(id) != nil {
-                    ActivityDetailView(activityID: id, onDelete: { selection = .today }).id(id)
-                } else {
-                    DayView()
-                }
-            case .tag(let id):
-                if store.tag(id) != nil {
-                    DayView(tagID: id).id(id)
-                } else {
-                    DayView()
+            case .activity(let id) where store.activity(id) != nil:
+                ActivityDetailView(activityID: id, onDelete: { selection = fallback() }).id(id)
+            case .tag(let id) where store.tag(id) != nil:
+                TagView(tagID: id).id(id)
+            default:
+                NoTagView(hasActivities: !store.activities.isEmpty) {
+                    creatingTag = true
                 }
             }
+        }
+        .onAppear {
+            if selection == nil { selection = fallback() }
         }
         .sheet(isPresented: $creatingNew) {
             ActivityEditor(mode: .create) { activity in
@@ -72,6 +63,8 @@ struct ContentView: View {
         .sheet(isPresented: $creatingTag) {
             TagEditor(mode: .create) { tag in
                 store.add(tag)
+                // The first tag replaces the empty state straight away.
+                if selection == nil { selection = .tag(tag.id) }
             }
         }
         .sheet(item: $editingTag) { tag in
@@ -80,6 +73,13 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showingGuide) { GuideSheet() }
+        .sheet(isPresented: $showingWordmark) { WordmarkColorSheet() }
+    }
+
+    /// Where to land when there's nothing else to show: the first tag, minus
+    /// one that's about to be deleted. Nil when there are no tags.
+    private func fallback(excluding id: Tag.ID? = nil) -> Route? {
+        store.tags.first { $0.id != id }.map { .tag($0.id) }
     }
 
     // MARK: Sidebar
@@ -90,13 +90,6 @@ struct ContentView: View {
         let hidden = activityOrder.sorted(store.hiddenActivities, calc: store.calc)
 
         return List(selection: $selection) {
-            Section {
-                ForEach(Scope.Span.allCases, id: \.self) { span in
-                    SpanRow(span: span)
-                        .tag(Route.span(span))
-                }
-            }
-            
             // Tags only make sense once there's something to tag.
             if !store.activities.isEmpty {
                 Section {
@@ -117,7 +110,7 @@ struct ContentView: View {
                                     Button("Edit") { editingTag = tag }
                                     Divider()
                                     Button("Delete", role: .destructive) {
-                                        if selection == .tag(tag.id) { selection = .today }
+                                        if selection == .tag(tag.id) { selection = fallback(excluding: tag.id) }
                                         store.delete(tag: tag.id)
                                     }
                                 }
@@ -129,7 +122,7 @@ struct ContentView: View {
                                 // the first action here deletes.
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button("Delete", role: .destructive) {
-                                        if selection == .tag(tag.id) { selection = .today }
+                                        if selection == .tag(tag.id) { selection = fallback(excluding: tag.id) }
                                         store.delete(tag: tag.id)
                                     }
                                     Button("Edit") { editingTag = tag }
@@ -175,7 +168,7 @@ struct ContentView: View {
                                 Button("Hide") { store.setHidden(activity.id, true) }
                                 Divider()
                                 Button("Delete", role: .destructive) {
-                                    if selection == .activity(activity.id) { selection = .today }
+                                    if selection == .activity(activity.id) { selection = fallback() }
                                     store.delete(activity.id)
                                 }
                             }
@@ -207,7 +200,7 @@ struct ContentView: View {
                                     Button("Unhide") { store.setHidden(activity.id, false) }
                                     Divider()
                                     Button("Delete", role: .destructive) {
-                                        if selection == .activity(activity.id) { selection = .today }
+                                        if selection == .activity(activity.id) { selection = fallback() }
                                         store.delete(activity.id)
                                     }
                                 }
@@ -303,6 +296,7 @@ struct ContentView: View {
             Divider()
             Text("A later start keeps late-night entries on the previous day.")
             Divider()
+            Button("Title color…") { showingWordmark = true }
             Button("Guide…") { showingGuide = true }
             Button("Import & Export…") { showingData = true }
         } label: {
@@ -313,43 +307,33 @@ struct ContentView: View {
 
 // MARK: - Sidebar rows
 
-/// Today, this week, this month or this year: every activity's jewels in the
-/// span's current period, against what they all ask for in it.
-private struct SpanRow: View {
-    @Environment(LogStore.self) private var store
-    let span: Scope.Span
+/// The detail pane with no tag to show. Tags are where jewels get slotted, so
+/// this points at making one — or, before that, at making an activity.
+private struct NoTagView: View {
+    let hasActivities: Bool
+    let addTag: () -> Void
 
     var body: some View {
-        let progress = store.progress(for: store.scope(span))
-        let fills = progress.fills
-
-        HStack(spacing: 12) {
-            Image(systemName: span.symbol)
-                .font(.system(size: 15))
-                .foregroundStyle(progress.isMet ? Chrome.gold : Chrome.steelHi)
-                .frame(width: 26)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(span.name)
-                    .font(.system(.body, design: .rounded, weight: .medium))
-
-                if fills.isEmpty {
-                    Text("no jewels yet")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    SlotRail(fills: fills, capacity: progress.target, size: 9, maxSlots: 14)
+        Group {
+            if hasActivities {
+                ContentUnavailableView {
+                    Label("No tags yet", systemImage: "tag")
+                } description: {
+                    Text("A tag gathers activities onto one rail with its own target. Make one to start slotting jewels here.")
+                } actions: {
+                    Button("Add a tag", action: addTag)
+                        .buttonStyle(.borderedProminent)
                 }
+            } else {
+                ContentUnavailableView(
+                    "Nothing to slot yet",
+                    systemImage: "circle.dotted",
+                    description: Text("Create an activity from the + menu, then gather a few into a tag.")
+                )
             }
-
-            Spacer(minLength: 4)
-
-            Text(progress.target > 0 ? "\(fills.count)/\(progress.target)" : "\(fills.count)")
-                .font(.system(.caption, design: .rounded, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(progress.isMet ? Chrome.gold : .secondary)
         }
-        .padding(.vertical, 3)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Chrome.panel.ignoresSafeArea())
     }
 }
 

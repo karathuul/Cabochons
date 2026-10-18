@@ -94,11 +94,10 @@ struct PeriodSummary: Identifiable, Hashable, Equatable {
 }
 
 /// Everything measured against one cadence: totals, streaks, and every period
-/// ever logged. An activity and a scope both produce one of these — the only
+/// ever logged. An activity and a tag both produce one of these — the only
 /// difference is whose jewels went in.
 struct PeriodStats {
     var total: Int = 0
-    /// The current period's. A span's target can change period to period.
     var target: Int = 1
     var cadence: Cadence = .daily
     var currentStreak: Int = 0
@@ -122,130 +121,15 @@ struct PeriodStats {
 /// The old name. Existing call sites (`ActivityDetailView`) keep compiling.
 typealias ActivityStats = PeriodStats
 
-// MARK: - Scopes
+// MARK: - Tag measures
 
-/// Some activities, measured against one cadence and one target. A tag is a
-/// scope; so are Today, this week, this month and this year — every activity,
-/// with what its members ask for in that span as the target. Everything that
-/// counts a group of activities goes through here, so they can't drift apart.
-struct Scope: Hashable {
-    /// The calendar's own periods, each covering every activity.
-    enum Span: CaseIterable, Hashable {
-        case day, week, month, year
-
-        var name: String {
-            switch self {
-            case .day:   "Today"
-            case .week:  "This week"
-            case .month: "This month"
-            case .year:  "This year"
-            }
-        }
-
-        var symbol: String {
-            switch self {
-            case .day:   "square.grid.2x2.fill"
-            case .week:  "calendar.day.timeline.left"
-            case .month: "calendar"
-            case .year:  "circle.grid.3x3.fill"
-            }
-        }
-
-        var cadence: Cadence {
-            switch self {
-            case .day:   .daily
-            case .week:  .weekly
-            case .month: .monthly
-            case .year:  Cadence(count: 12, unit: .month)
-            }
-        }
-
-        /// "days", "weeks", … — what a streak in this span counts.
-        var periodNoun: String {
-            switch self {
-            case .day:   "days"
-            case .week:  "weeks"
-            case .month: "months"
-            case .year:  "years"
-            }
-        }
-
-        /// A date the span's periods tile from: a first weekday for weeks, a
-        /// January for years. Days and months tile the same from anywhere.
-        func anchor(_ calc: DayCalculator) -> Date {
-            let today = calc.today
-            switch self {
-            case .day, .month:
-                return today
-            case .week:
-                let offset = (calc.calendar.component(.weekday, from: today) - calc.calendar.firstWeekday + 7) % 7
-                return calc.offsetting(today, by: -offset)
-            case .year:
-                let year = calc.calendar.component(.year, from: today)
-                // Mid-month, so a late day start can't tip it into December.
-                return calc.calendar.date(from: DateComponents(year: year, month: 1, day: 15)) ?? today
-            }
-        }
-    }
-
-    enum Kind: Hashable {
-        case span(Span)
-        case tag(Tag.ID)
-    }
-
-    /// One activity's ask, to be scaled to whatever period is being measured.
-    struct Quota: Hashable {
-        let cadence: Cadence
-        let target: Int
-
-        /// How many whole turns of this cadence fit in a period of `days`
-        /// days spanning `months` calendar months. A daily activity fits 7
-        /// times in a week; a weekly one fits 4 times in any month; a monthly
-        /// one fits no times in a week.
-        func fits(days: Int, months: Int) -> Int {
-            if let length = cadence.lengthInDays { return days / length }
-            return months / cadence.count
-        }
-    }
-
-    enum Goal: Hashable {
-        /// A tag's: the same every period.
-        case fixed(Int)
-        /// A span's: every visible activity's target, scaled to the period —
-        /// so February asks for less than March.
-        case scaled([Quota])
-    }
-
-    let kind: Kind
-    let name: String
-    let symbol: String
-    /// Nil means every activity.
-    let memberIDs: [UUID]?
-    let goal: Goal
-    let cadence: Cadence
-    /// Period anchor.
-    let anchor: Date
-
-    var tagID: Tag.ID? {
-        if case .tag(let id) = kind { id } else { nil }
-    }
-
-    var span: Span? {
-        if case .span(let span) = kind { span } else { nil }
-    }
-
-    /// True for the calendar spans, which hold every activity — and so every tag.
-    var isEverything: Bool { memberIDs == nil }
-
+/// What a tag's screen needs beyond its own fields. Here, not on `Tag`
+/// itself, because they read activities and `Models.swift` stays plain data.
+extension Tag {
     /// "days" / "weeks" / "months" for a plain cadence; "periods" for a
     /// compound one like every 2 weeks, where none of those is honest.
     var periodNoun: String {
-        if let span { return span.periodNoun }
-        return cadence.count == 1 ? cadence.unit.label(count: 2) : "periods"
-    }
-
-    func contains(_ id: Activity.ID) -> Bool {
-        memberIDs?.contains(id) ?? true
+        cadence.count == 1 ? cadence.unit.label(count: 2) : "periods"
     }
 
     /// Visible members, in sidebar order: the ones that get a button.
@@ -253,54 +137,14 @@ struct Scope: Hashable {
         activities.filter { !$0.isHidden && contains($0.id) }
     }
 
-    /// The target for the period running from `start` to `end` (exclusive).
-    func target(from start: Date, to end: Date, calc: DayCalculator) -> Int {
-        switch goal {
-        case .fixed(let target):
-            return target
-        case .scaled(let quotas):
-            let days = calc.daysBetween(start, end)
-            let months = calc.calendar.dateComponents([.month], from: start, to: end).month ?? 0
-            return quotas.reduce(0) { $0 + $1.target * $1.fits(days: days, months: months) }
-        }
-    }
-
-    /// Sockets today's rail has: today's target when the scope is daily,
+    /// Sockets today's rail has: the tag's own target when it's daily,
     /// otherwise the daily targets of its visible members. A monthly activity
     /// owes nothing in particular today, and a hidden one owes nothing at all.
-    func dailyCapacity(of activities: [Activity], calc: DayCalculator) -> Int {
-        if cadence.isDaily {
-            return target(from: calc.today, to: calc.offsetting(calc.today, by: 1), calc: calc)
-        }
+    func dailyCapacity(of activities: [Activity]) -> Int {
+        if cadence.isDaily { return target }
         return visibleMembers(of: activities)
             .filter { $0.cadence.isDaily }
             .reduce(0) { $0 + $1.target }
-    }
-
-    init(_ tag: Tag) {
-        kind = .tag(tag.id)
-        name = tag.name
-        symbol = tag.symbol
-        memberIDs = tag.activityIDs
-        goal = .fixed(tag.target)
-        cadence = tag.cadence
-        anchor = tag.createdAt
-    }
-
-    /// Every activity, one span at a time. With nothing that fits the span —
-    /// no daily activities, for Today — the target is 0 and it's open-ended.
-    init(_ span: Span, activities: [Activity], calc: DayCalculator) {
-        kind = .span(span)
-        name = span.name
-        symbol = span.symbol
-        memberIDs = nil
-        goal = .scaled(
-            activities
-                .filter { !$0.isHidden && !$0.isOpenEnded }
-                .map { Quota(cadence: $0.cadence, target: $0.target) }
-        )
-        cadence = span.cadence
-        anchor = span.anchor(calc)
     }
 }
 
@@ -332,12 +176,11 @@ struct PeriodProgress: Identifiable, Hashable {
     var remaining: Int { max(0, target - count) }
 }
 
-/// Where one scope stands in its current period — a tag this week, or Today
-/// today. The rail is mixed-colour, and the rail *is* the breakdown: you can
-/// see which member each jewel came from.
-struct ScopeProgress: Identifiable, Hashable {
-    /// Nil is Today.
-    let tagID: Tag.ID?
+/// Where one tag stands in its current period. The tag equivalent of
+/// `PeriodProgress`, with a mixed-colour rail — the rail *is* the breakdown:
+/// you can see which member each jewel came from.
+struct TagProgress: Identifiable, Hashable {
+    let tagID: Tag.ID
     let name: String
     let count: Int
     let target: Int
@@ -349,7 +192,7 @@ struct ScopeProgress: Identifiable, Hashable {
     /// Members with at least one jewel this period, in sidebar order.
     var tallies: [ActivityTally] = []
 
-    var id: Tag.ID? { tagID }
+    var id: Tag.ID { tagID }
     var isMet: Bool { target > 0 && count >= target }
     var remaining: Int { max(0, target - count) }
     var overflow: Int { max(0, count - target) }
@@ -364,43 +207,41 @@ enum Stats {
     static func compute(for activity: Activity, calc: DayCalculator) -> PeriodStats {
         periodStats(
             entries: activity.jewels.map { LoggedJewel($0, of: activity) },
-            target: { _, _ in activity.target },
+            target: activity.target,
             cadence: activity.cadence,
             anchor: activity.createdAt,
             calc: calc
         )
     }
 
-    // MARK: A scope
+    // MARK: Single tag
 
-    /// Every member's jewels measured against the scope's own cadence. Hidden
+    /// Every member's jewels measured against the tag's own cadence. Hidden
     /// members still contribute — their jewels were earned — it's only the
     /// forward-looking surfaces that drop them.
-    static func compute(for scope: Scope, activities: [Activity], calc: DayCalculator) -> PeriodStats {
+    static func compute(for tag: Tag, activities: [Activity], calc: DayCalculator) -> PeriodStats {
         periodStats(
-            entries: entries(of: scope, in: activities),
-            target: { scope.target(from: $0, to: $1, calc: calc) },
-            cadence: scope.cadence,
-            anchor: scope.anchor,
+            entries: entries(of: tag, in: activities),
+            target: tag.target,
+            cadence: tag.cadence,
+            anchor: tag.createdAt,
             calc: calc
         )
     }
 
-    /// Every jewel belonging to a scope's members, unsorted.
-    static func entries(of scope: Scope, in activities: [Activity]) -> [LoggedJewel] {
+    /// Every jewel belonging to a tag's members, unsorted.
+    static func entries(of tag: Tag, in activities: [Activity]) -> [LoggedJewel] {
         activities
-            .filter { scope.contains($0.id) }
+            .filter { tag.contains($0.id) }
             .flatMap { activity in activity.jewels.map { LoggedJewel($0, of: activity) } }
     }
 
     /// The shared engine. Buckets entries into periods of `cadence` counted
-    /// from `anchor`, then measures each bucket against its `target` (given
-    /// the period's start and exclusive end, since a month's can differ from
-    /// the next). Doesn't care whether the entries came from one activity or
-    /// several.
+    /// from `anchor`, then measures each bucket against `target`. Doesn't care
+    /// whether the entries came from one activity or several.
     private static func periodStats(
         entries: [LoggedJewel],
-        target: (Date, Date) -> Int,
+        target: Int,
         cadence: Cadence,
         anchor: Date,
         calc: DayCalculator
@@ -416,14 +257,12 @@ enum Stats {
 
         func summary(_ index: Int) -> PeriodSummary {
             let inPeriod = (byPeriod[index] ?? []).sorted { $0.timestamp < $1.timestamp }
-            let start = calc.periodStart(index: index, cadence: cadence, anchor: anchor)
-            let end = calc.periodEnd(index: index, cadence: cadence, anchor: anchor)
             return PeriodSummary(
                 index: index,
-                start: start,
-                end: end,
+                start: calc.periodStart(index: index, cadence: cadence, anchor: anchor),
+                end: calc.periodEnd(index: index, cadence: cadence, anchor: anchor),
                 count: inPeriod.count,
-                target: target(start, end),
+                target: target,
                 fills: inPeriod.map(\.rail)
             )
         }
@@ -440,7 +279,7 @@ enum Stats {
 
         var stats = PeriodStats()
         stats.total = entries.count
-        stats.target = current.target
+        stats.target = target
         stats.cadence = cadence
         stats.periodsLogged = counts.count
         stats.periodsMet = met.count
@@ -452,23 +291,22 @@ enum Stats {
         return stats
     }
 
-    static func progress(for scope: Scope, activities: [Activity], calc: DayCalculator) -> ScopeProgress {
-        let cadence = scope.cadence
-        let anchor = scope.anchor
+    static func progress(for tag: Tag, activities: [Activity], calc: DayCalculator) -> TagProgress {
+        let cadence = tag.cadence
+        let anchor = tag.createdAt
         let index = calc.currentPeriodIndex(cadence: cadence, anchor: anchor)
 
-        let inPeriod = entries(of: scope, in: activities)
+        let inPeriod = entries(of: tag, in: activities)
             .filter { calc.periodIndex(for: $0.timestamp, cadence: cadence, anchor: anchor) == index }
             .sorted { $0.timestamp < $1.timestamp }
 
-        let start = calc.periodStart(index: index, cadence: cadence, anchor: anchor)
         let end = calc.periodEnd(index: index, cadence: cadence, anchor: anchor)
 
-        return ScopeProgress(
-            tagID: scope.tagID,
-            name: scope.name,
+        return TagProgress(
+            tagID: tag.id,
+            name: tag.name,
             count: inPeriod.count,
-            target: scope.target(from: start, to: end, calc: calc),
+            target: tag.target,
             cadence: cadence,
             periodLabel: calc.periodLabel(index: index, cadence: cadence, anchor: anchor),
             daysRemaining: max(0, calc.daysBetween(calc.today, end)),

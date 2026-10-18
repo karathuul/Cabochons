@@ -18,8 +18,6 @@ struct ActivityEditor: View {
     let mode: Mode
     let onSave: (Activity) -> Void
 
-    @Environment(\.self) private var environment
-
     /// Which tags this activity belongs to. Membership lives on the tag, so
     /// this is seeded from the store on appear (the environment isn't
     /// available in `init`) and written back through `store.setTags`.
@@ -58,10 +56,6 @@ struct ActivityEditor: View {
         let times = target == 1 ? "Once" : "\(target) times"
         return cadence.isDaily ? "\(times) a day" : "\(times) every \(cadence.phrase)"
     }
-    /// Mirrors `color` for the system picker, which speaks in `Color`.
-    @State private var picked: Color = CabochonsColor.magic.core
-    @State private var adjusted = false
-
     init(mode: Mode, onSave: @escaping (Activity) -> Void) {
         self.mode = mode
         self.onSave = onSave
@@ -74,7 +68,6 @@ struct ActivityEditor: View {
             _target = State(initialValue: max(1, activity.target))
             _cadenceCount = State(initialValue: activity.cadence.count)
             _cadenceUnit = State(initialValue: activity.cadence.unit)
-            _picked = State(initialValue: activity.color.core)
         }
     }
 
@@ -97,56 +90,7 @@ struct ActivityEditor: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 FieldLabel("Jewel")
-
-                HStack(spacing: 14) {
-                    ForEach(CabochonsColor.presets) { preset in
-                        Button {
-                            color = preset.color
-                            picked = preset.color.core
-                        } label: {
-                            CabochonsOrb(
-                                color: preset.color,
-                                size: 38,
-                                glow: color.matches(preset.color) ? 1.4 : 0.4
-                            )
-                            .overlay {
-                                Circle()
-                                    .strokeBorder(
-                                        .white.opacity(color.matches(preset.color) ? 0.9 : 0),
-                                        lineWidth: 2
-                                    )
-                                    .padding(-4)
-                            }
-                            .saturation(color.matches(preset.color) ? 1 : 0.55)
-                        }
-                        .buttonStyle(OrbButtonStyle())
-                        .help(preset.name)
-                    }
-                }
-
-                HStack(spacing: 12) {
-                    ColorPicker("Custom", selection: $picked, supportsOpacity: false)
-                        .labelsHidden()
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(color.displayName)
-                            .font(.system(.caption, design: .rounded, weight: .medium))
-                        if adjusted {
-                            // Say so rather than silently overriding the pick.
-                            Text("brightened to read against the socket")
-                                .font(.caption2)
-                                .foregroundStyle(Chrome.gold)
-                        }
-                    }
-
-                    Spacer()
-                }
-                .onChange(of: picked) { _, new in
-                    let rgb = new.resolve(in: environment)
-                    let r = Double(rgb.red), g = Double(rgb.green), b = Double(rgb.blue)
-                    color = CabochonsColor(red: r, green: g, blue: b)
-                    adjusted = CabochonsColor.wasAdjusted(red: r, green: g, blue: b)
-                }
+                JewelColorPicker(color: $color)
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -265,6 +209,139 @@ struct ActivityEditor: View {
             store.setTags(tagIDs, for: existing.id)
         }
         dismiss()
+    }
+}
+
+/// The preset orbs plus a custom colour well. Shared by the activity editor
+/// (an activity's jewel) and the wordmark sheet (the colour titles are cut from).
+struct JewelColorPicker: View {
+    @Binding var color: CabochonsColor
+
+    @Environment(\.self) private var environment
+
+    /// Mirrors `color` for the system picker, which speaks in `Color`.
+    @State private var picked: Color
+    @State private var adjusted = false
+
+    init(color: Binding<CabochonsColor>) {
+        _color = color
+        _picked = State(initialValue: color.wrappedValue.core)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                ForEach(CabochonsColor.presets) { preset in
+                    Button {
+                        color = preset.color
+                        picked = preset.color.core
+                    } label: {
+                        CabochonsOrb(
+                            color: preset.color,
+                            size: 38,
+                            glow: color.matches(preset.color) ? 1.4 : 0.4
+                        )
+                        .overlay {
+                            Circle()
+                                .strokeBorder(
+                                    .white.opacity(color.matches(preset.color) ? 0.9 : 0),
+                                    lineWidth: 2
+                                )
+                                .padding(-4)
+                        }
+                        .saturation(color.matches(preset.color) ? 1 : 0.55)
+                    }
+                    .buttonStyle(OrbButtonStyle())
+                    .help(preset.name)
+                }
+            }
+
+            HStack(spacing: 12) {
+                ColorPicker("Custom", selection: $picked, supportsOpacity: false)
+                    .labelsHidden()
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(color.displayName)
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                    if adjusted {
+                        // Say so rather than silently overriding the pick.
+                        Text("brightened to read against the socket")
+                            .font(.caption2)
+                            .foregroundStyle(Chrome.gold)
+                    }
+                }
+
+                Spacer()
+            }
+            .onChange(of: picked) { _, new in
+                let rgb = new.resolve(in: environment)
+                let r = Double(rgb.red), g = Double(rgb.green), b = Double(rgb.blue)
+                color = CabochonsColor(red: r, green: g, blue: b)
+                adjusted = CabochonsColor.wasAdjusted(red: r, green: g, blue: b)
+            }
+        }
+    }
+}
+
+// MARK: - Wordmark colour
+
+/// Picks the orb every screen title is cut from. Writes straight through to
+/// storage, so the header behind the sheet changes as you pick.
+struct WordmarkColorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(CabochonsColor.wordmarkKey) private var stored: Data?
+
+    @State private var color: CabochonsColor = .wordmark
+    /// Bumped by Reset so the picker re-seeds its colour well.
+    @State private var resets = 0
+
+    init() {
+        _color = State(initialValue: CabochonsColor.storedWordmark)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack {
+                Text("Wordmark")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                Spacer()
+                Button("Done") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+
+            Wordmark(title: "Cabochons", color: color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 10) {
+                FieldLabel("Colour")
+                JewelColorPicker(color: $color)
+                    .id(resets)
+            }
+
+            Button("Reset to default") {
+                color = .wordmark
+                resets += 1
+            }
+            .disabled(color.matches(.wordmark))
+
+            Spacer(minLength: 0)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Chrome.panel)
+        #if os(macOS)
+        .frame(width: 420, height: 340)
+        #else
+        .presentationDetents([.medium])
+        #endif
+        .onChange(of: color) { _, new in
+            // The default isn't stored, so a later change to it still reaches
+            // anyone who never picked their own.
+            stored = new.matches(.wordmark) ? nil : try? JSONEncoder().encode(new)
+        }
     }
 }
 
@@ -787,7 +864,7 @@ private struct FieldLabel: View {
 // MARK: - Period detail
 
 /// Every jewel logged in one turn of a cadence — by one activity, or by every
-/// member of a scope (a day of Today, a week of a tag).
+/// member of a tag.
 struct PeriodEntriesSheet: View {
     @Environment(LogStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -798,7 +875,7 @@ struct PeriodEntriesSheet: View {
 
     private enum Source {
         case activity(UUID)
-        case scope(Scope)
+        case tag(Tag)
     }
 
     init(period: PeriodSummary, title: String, activityID: UUID) {
@@ -807,16 +884,16 @@ struct PeriodEntriesSheet: View {
         self.source = .activity(activityID)
     }
 
-    init(period: PeriodSummary, title: String, scope: Scope) {
+    init(period: PeriodSummary, title: String, tag: Tag) {
         self.period = period
         self.title = title
-        self.source = .scope(scope)
+        self.source = .tag(tag)
     }
 
     var body: some View {
         let entries = switch source {
         case .activity(let id): store.entries(in: period, activityID: id)
-        case .scope(let scope): store.entries(in: period, scope: scope)
+        case .tag(let tag): store.entries(in: period, tag: tag)
         }
         EntryList(
             title: title,
