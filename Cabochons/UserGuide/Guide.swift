@@ -19,7 +19,6 @@ internal import Foundation
 enum GuideTopicID: String, CaseIterable, Identifiable {
     case orbs
     case sockets
-    case dayRail
     case star
     case targets
     case whenever
@@ -98,10 +97,10 @@ enum GuideContent {
         case .orbs:
             return GuideTopic(
                 .orbs,
-                title: "Orbs & Jewels",
+                title: "Activity Jewels",
                 symbol: "circle.circle.fill",
-                blurb: "Press an orb. A jewel drops into today. That's the whole app.",
-                detail: "Press again for another. Everything else — targets, streaks, tags — is only ever counting these."
+                blurb: "An atomic element of an activity.",
+                detail: "To commemorate a single instance of an activity."
             )
 
         case .sockets:
@@ -109,26 +108,17 @@ enum GuideContent {
                 .sockets,
                 title: "Sockets",
                 symbol: "circle.dotted",
-                blurb: "Empty sockets are what this period still wants from you.",
-                detail: "Fill them all and you're done until the period turns over."
-            )
-
-        case .dayRail:
-            return GuideTopic(
-                .dayRail,
-                title: "The Day Rail",
-                symbol: "rectangle.split.3x1.fill",
-                blurb: "Everything a tag's members logged today, in the order it happened.",
-                detail: "Colours mix freely. The rail doesn't sort by activity — it sorts by when."
+                blurb: "Empty sockets yearn to be filled with a jewel.",
+                detail: "A socket count can be set for a period of time by individual activity, or by tag for a selected set of activities."
             )
 
         case .star:
             return GuideTopic(
                 .star,
-                title: "The Gold Star",
+                title: "A Gold Star",
                 symbol: "star.fill",
-                blurb: "A gold star means that target is met for the period.",
-                detail: "Tags get one too, and their glyph turns gold with it. Keep going past it if you like — nothing stops you."
+                blurb: "A gold star means that every socket is filled with an activity jewel for this period.",
+                detail: "A gold star means a goal has been acheived. Bonus activities are slotted in golden sockets!"
             )
 
         case .targets:
@@ -182,7 +172,7 @@ enum GuideContent {
                 title: "The Glint",
                 symbol: "sparkle",
                 blurb: "A four-point flare on a jewel means there's a note inside.",
-                detail: "Longer note, bigger flare. It rides the same light as everything else, so it moves when you tilt."
+                detail: "The longer your note is, the larger the sparkle will appear. It reacts to how you tilt your device."
             )
 
         case .tags:
@@ -190,8 +180,8 @@ enum GuideContent {
                 .tags,
                 title: "Tags",
                 symbol: "tag.fill",
-                blurb: "Group activities, then give the group its own target. A tag is where you slot jewels.",
-                detail: "An activity can wear as many tags as it likes. Tag targets stack on top of each activity's own — \"exercise five times a week\" doesn't care which exercise."
+                blurb: "A tag is a group of activities.",
+                detail: "An activity can be included in multiple tags."
             )
 
         case .hiding:
@@ -264,9 +254,9 @@ enum GuideContent {
 
     /// Order and grouping of the Guide screen.
     static let sections: [GuideSection] = [
-        GuideSection(title: "Basics", topics: [.orbs, .sockets, .dayRail, .star]),
+        GuideSection(title: "Basics", topics: [.orbs, .tags, .sockets, .star]),
         GuideSection(title: "Keeping Time", topics: [.targets, .whenever, .streaks, .dayStart]),
-        GuideSection(title: "Details", topics: [.notes, .glint, .tags, .hiding, .shimmer]),
+        GuideSection(title: "Details", topics: [.notes, .glint, .hiding, .shimmer]),
         GuideSection(title: "Elsewhere", topics: [.widgets, .shortcuts, .automations, .data])
     ]
 }
