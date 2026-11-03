@@ -112,7 +112,7 @@ struct ActivityEditor: View {
                         }
                         .fixedSize()
 
-                        Text("every")
+                        Text("per")
                             .font(.system(.body, design: .rounded))
                             .foregroundStyle(.secondary)
 
@@ -554,7 +554,7 @@ struct TagEditor: View {
                 }
                 .fixedSize()
 
-                Text("every")
+                Text("per")
                     .font(.system(.body, design: .rounded))
                     .foregroundStyle(.secondary)
 
