@@ -12,10 +12,6 @@ internal import Foundation
 /// container URL comes back nil and the widget falls back to an empty read.
 enum AppGroup {
     static let identifier = "group.com.qibasin.Cabochons"
-
-    /// The group before the rename. Still listed in the app's entitlements, but
-    /// only so `SharedStorage.migrateIfNeeded()` can move the data out of it.
-    static let legacyIdentifier = "group.com.qibasin.Memoria"
 }
 
 /// On-disk shape. Versioned so the format can change later without guessing.
@@ -63,9 +59,6 @@ struct LogFile: Codable {
 /// there's a single source of truth for the location and the JSON settings.
 enum SharedStorage {
     static let fileName = "cabochons.json"
-
-    /// The data file's name before the rename.
-    static let legacyFileName = "memoria.json"
 
     /// The folder holding the data file: the App Group container when it's
     /// configured, otherwise the app's own Application Support. The fallback
@@ -119,41 +112,5 @@ enum SharedStorage {
     static func write(_ file: LogFile) {
         guard let data = try? makeEncoder().encode(file) else { return }
         try? data.write(to: fileURL, options: .atomic)
-    }
-
-    /// Moves data into the current shared container on first launch. Two places
-    /// can hold it from before: the pre-rename App Group (`memoria.json`), and
-    /// Application Support, used before any group was configured. The first
-    /// one that exists is copied across. Without this, the rename would strand
-    /// every jewel logged before the upgrade. The old file is left in place.
-    /// Runs once: it no-ops as soon as the shared file exists.
-    static func migrateIfNeeded() {
-        let destination = fileURL
-        guard !FileManager.default.fileExists(atPath: destination.path) else { return }
-
-        var candidates: [URL] = []
-        if let oldGroup = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: AppGroup.legacyIdentifier
-        ) {
-            candidates.append(oldGroup
-                .appendingPathComponent("Cabochons", isDirectory: true)
-                .appendingPathComponent(legacyFileName))
-        }
-        if let appSupport = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: false
-        ) {
-            candidates.append(appSupport
-                .appendingPathComponent("Cabochons", isDirectory: true)
-                .appendingPathComponent(legacyFileName))
-        }
-
-        guard let source = candidates.first(where: {
-            FileManager.default.fileExists(atPath: $0.path)
-        }) else { return }
-
-        try? FileManager.default.copyItem(at: source, to: destination)
     }
 }

@@ -308,7 +308,6 @@ final class LogStore : Observable {
     private var isLoading = false
 
     init() {
-        SharedStorage.migrateIfNeeded()
         load()
     }
 

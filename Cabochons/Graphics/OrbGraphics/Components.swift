@@ -271,8 +271,7 @@ struct CabochonsSocket: View {
 
 // MARK: - Note glint
 
-/// A four-point lens flare where the sphere catches the light. Materia in FF7
-/// sparkles; a jewel worth writing about sparkles harder.
+/// <*> Becomes very shiny with a big lens flare.
 ///
 /// Sits on the existing specular highlight (top-left), so it reads as the
 /// highlight flaring rather than as hardware added to the gem. Clear of the

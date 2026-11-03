@@ -288,13 +288,20 @@ struct ContentView: View {
         @Bindable var store = store
 
         return Menu {
-            Picker("Day starts at", selection: $store.dayStartHour) {
-                ForEach([0, 3, 4, 5, 6], id: \.self) { hour in
-                    Text(hour == 0 ? "Midnight" : "\(hour):00 AM").tag(hour)
+            // A submenu, so the five hours and their explanation don't crowd
+            // the top level. The subtitle keeps the current choice visible.
+            Menu {
+                Picker("Day starts at", selection: $store.dayStartHour) {
+                    ForEach([0, 3, 4, 5, 6], id: \.self) { hour in
+                        Text(Self.dayStartLabel(hour)).tag(hour)
+                    }
                 }
+                Divider()
+                Text("A later start keeps late-night entries on the previous day.")
+            } label: {
+                Text("Day starts at")
+                Text(Self.dayStartLabel(store.dayStartHour))
             }
-            Divider()
-            Text("A later start keeps late-night entries on the previous day.")
             Divider()
             Button("Title color…") { showingWordmark = true }
             Button("Guide…") { showingGuide = true }
@@ -302,6 +309,10 @@ struct ContentView: View {
         } label: {
             Label("Settings", systemImage: "gearshape")
         }
+    }
+
+    private static func dayStartLabel(_ hour: Int) -> String {
+        hour == 0 ? "Midnight" : "\(hour):00 AM"
     }
 }
 
