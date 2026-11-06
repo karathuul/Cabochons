@@ -33,7 +33,3 @@ Because we collect no data from anyone, we collect none from children either.
 ## Changes to this policy
 
 If this policy ever changes, the updated version will be posted on this page with a new effective date. If the app ever needs to collect data, this policy will be updated before that change ships.
-
-## Contact
-
-Questions about this policy? Email: **your-email@example.com**
